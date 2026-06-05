@@ -8,5 +8,51 @@
         "scminput": false
     },
     "gitlens.ai.model": "vscode",
-    "gitlens.ai.vscode.model": "copilotcli:claude-haiku-4.5"
+    "gitlens.ai.vscode.model": "copilotcli:claude-haiku-4.5",
+
+    // ==========================================
+    // ターミナルの文字化け対策
+    // ==========================================
+    "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'Menlo', 'Monaco', monospace",
+
+    // ==========================================
+    // LaTeX Workshop の設定
+    // ==========================================
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk (platex)",
+            "command": "latexmk",
+            "args": [
+                "-e", "$latex=q/platex %O -synctex=1 -interaction=nonstopmode %S/",
+                "-e", "$bibtex=q/pbibtex %O %B/",
+                "-e", "$makeindex=q/mendex %O -o %D %S/",
+                "-e", "$dvipdf=q/dvipdfmx %O -o %D %S/",
+                "-pdfdvi",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "platex -> dvipdfmx",
+            "tools": [
+                "latexmk (platex)"
+            ]
+        }
+    ],
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    
+    // ビルド成功時に自動でお掃除する設定
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+
+    // お掃除の方式を「指定した拡張子を消す方式(glob)」に変更する
+    "latex-workshop.latex.clean.method": "glob",
+    
+    // お掃除する対象ファイルの一覧（末尾に *.dvi を追加しています）
+    "latex-workshop.latex.clean.fileTypes": [
+        "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.ilg", "*.lof", "*.log", "*.lot", "*.toc", "*.fls", "*.fdb_latexmk", "*.pdfsync", "*.synctex.gz", "*.dvi"
+    ],
+
+    "latex-workshop.view.pdf.viewer": "tab"
 }
