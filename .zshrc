@@ -19,3 +19,8 @@ setopt SHARE_HISTORY
 
 # cdで移動するたびに履歴を保存し、「cd -[Tab]」で過去のディレクトリにアクセスできるようにする
 setopt AUTO_PUSHD
+
+# ==========================================
+# opam (OCaml パッケージマネージャー)
+# ==========================================
+[[ ! -r ~/.opam/opam-init/init.zsh ]] || source ~/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null

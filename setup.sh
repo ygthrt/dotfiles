@@ -47,4 +47,25 @@ echo "Brewfile からアプリをインストールしています..."
 cd ~/dotfiles
 brew bundle
 
+# =========================================================
+# 5. opam (OCaml / MetaOCaml) の自動セットアップ
+# =========================================================
+echo "opam の状態を確認しています..."
+
+# brew bundle で opam がインストールされているか確認
+if command -v opam &> /dev/null; then
+    # ~/.opam フォルダがない場合のみ（初回のみ）実行する
+    if [ ! -d "$HOME/.opam" ]; then
+        echo "opam を初期化し、MetaOCaml (5.3.0+BER) を構築します..."
+        
+        # ユーザーへの質問をスキップ(-y)して自動初期化
+        opam init --disable-sandboxing --reinit -y
+        
+        # MetaOCamlの環境を自動作成(-y)
+        opam switch create metaocaml 5.3.0+BER -y
+    else
+        echo "opam はすでにセットアップされています。"
+    fi
+fi
+
 echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"
