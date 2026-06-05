@@ -9,11 +9,9 @@ macOS の設定ファイルを一元管理し、シンボリックリンクと H
 - **設計**: 設定ファイルは `~/dotfiles/` に保存され、標準的な場所（`~/.zshrc`、`~/.config/zsh/` など）にシンボリックリンクされる
 - **メリット**: すべての設定の単一情報源、バージョン管理が容易、新しいマシンへのクローンが簡単
 - **主要な場所**:
-  - `~/.zshrc` → `dotfiles/.zshrc`
-  - `~/.config/zsh/.zshrc` → `dotfiles/.config/zsh/.zshrc`
-  - `~/.config/starship.toml` → `dotfiles/.config/starship.toml`
-  - `~/.config/ghostty/config` → `dotfiles/.config/ghostty/config`
-  - `~/.config/zsh/hidden` → `dotfiles/.config/zsh/hidden`（機密情報用、gitignore対象）
+  - ホームディレクトリのドットファイル: `~/.<filename>` → `dotfiles/.<filename>`
+  - `.config` 配下のファイル: `~/.config/<app>/<config>` → `dotfiles/.config/<app>/<config>`
+  - 隠し設定ディレクトリ: `~/.config/<app>/hidden` → `dotfiles/.config/<app>/hidden`（機密情報用、gitignore対象）
 
 ### Homebrew パッケージ管理
 - **Brewfile**: 管理対象のすべてのパッケージ（formula、cask、VS Code拡張機能）をリスト化
@@ -91,3 +89,4 @@ brew bundle dump -f
 - `.gitignore` で `hidden/*` 内のすべてのファイルを除外（ただし `hidden/README.md` は除外）
 - `.DS_Store` はグローバルで gitignore 対象
 - Homebrew インストール自体はトラッキング対象ではなく、setup.sh により必要に応じてインストール
+
