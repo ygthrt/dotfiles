@@ -1,3 +1,7 @@
+brew "fzf"
+brew "gh"
+brew "jq"
+brew "ripgrep"
 brew "starship"
 brew "tree"
 brew "zsh"
