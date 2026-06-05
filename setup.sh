@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
+set -o pipefail
+
+LOGFILE="$HOME/.dotfiles-setup.log"
 
 echo "セットアップを開始します..."
+echo "ログ: $LOGFILE"
 
 # =========================================================
 # 1. 必要なディレクトリの作成
@@ -54,6 +58,34 @@ run_cmd() {
     eval "$@"
   fi
 }
+
+# run command and append output to logfile; abort on failure
+run_and_log() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] $*"
+    return 0
+  fi
+  echo "[RUN] $*" | tee -a "$LOGFILE"
+  eval "$@" >>"$LOGFILE" 2>&1
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "コマンドが失敗しました: $* (exit $status)" | tee -a "$LOGFILE" >&2
+    return $status
+  fi
+  return 0
+}
+
+on_error() {
+  rc=$?
+  echo "エラー発生: exit $rc" >&2
+  echo "最後の20行 ($LOGFILE):" >&2
+  if [ -f "$LOGFILE" ]; then
+    tail -n 20 "$LOGFILE" >&2
+  fi
+  exit $rc
+}
+
+trap 'on_error' ERR
 
 # =========================================================
 # 2. シンボリックリンクの作成
@@ -120,10 +152,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
   echo "[DRY-RUN] brew bundle (will not run)"
 else
-  if ! brew bundle; then
-    echo "brew bundle に失敗しました。ログを確認してください。" >&2
-    exit 1
-  fi
+  run_and_log "brew bundle" || { echo "brew bundle に失敗しました。$LOGFILE を確認してください" >&2; exit 1; }
 fi
 
 # =========================================================
@@ -141,22 +170,14 @@ if command -v opam &> /dev/null; then
         if [ "$DRY_RUN" -eq 1 ]; then
           echo "[DRY-RUN] opam init --disable-sandboxing --reinit -y"
         else
-          opam init --disable-sandboxing --reinit -y
-          if [ $? -ne 0 ]; then
-            echo "opam init が失敗しました" >&2
-            exit 1
-          fi
+          run_and_log "opam init --disable-sandboxing --reinit -y" || { echo "opam init が失敗しました" >&2; exit 1; }
         fi
         
         # MetaOCamlの環境を自動作成(-y)
         if [ "$DRY_RUN" -eq 1 ]; then
           echo "[DRY-RUN] opam switch create metaocaml 5.3.0+BER -y"
         else
-          opam switch create metaocaml 5.3.0+BER -y
-          if [ $? -ne 0 ]; then
-            echo "opam switch の作成に失敗しました" >&2
-            exit 1
-          fi
+          run_and_log "opam switch create metaocaml 5.3.0+BER -y" || { echo "opam switch の作成に失敗しました" >&2; exit 1; }
         fi
     else
         echo "opam はすでにセットアップされています。"
