@@ -13,7 +13,8 @@
     // ==========================================
     // ターミナルの文字化け対策
     // ==========================================
-    "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'Menlo', 'Monaco', monospace",
+    // "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'Menlo', 'Monaco', monospace",
+    "terminal.integrated.fontFamily": "'HackGen Console NF', 'Menlo', 'Monaco', monospace",
 
     // ==========================================
     // LaTeX Workshop の設定
