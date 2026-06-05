@@ -23,24 +23,53 @@ SafariのプライベートウィンドウでGitHubにログインし、Personal
 
 #### 3. リポジトリのクローン
 
-ホームディレクトリ（~/）に移動し、以下のコマンドを実行してリポジトリをクローンします。
+ホームディレクトリ（~/）に移動し、以下のコマンドを実行してリポジトリをクローンします（既定では ~/dotfiles にクローンします）。
 
 ```bash
 cd ~/
 git clone https://github.com/ygthrt/dotfiles.git
 ```
 
+別の場所にクローンしたい場合は、環境変数 DOTFILES_DIR を使うか、setup.sh 実行時に第一引数で指定できます（優先順: 環境変数 > スクリプト引数 > デフォルト）。例:
+
+```bash
+# 環境変数を使う
+export DOTFILES_DIR="$HOME/my-dotfiles"
+cd "$HOME/my-dotfiles"
+chmod +x setup.sh
+./setup.sh
+
+# またはスクリプト引数を使う
+cd "$HOME"
+git clone https://github.com/ygthrt/dotfiles.git "$HOME/my-dotfiles"
+cd "$HOME/my-dotfiles"
+chmod +x setup.sh
+./setup.sh "$HOME/my-dotfiles"
+```
+
 > **注記**: パスワードを求められた場合は、前述で取得したGitHub認証用トークン（PAT）を使用してください。
 
 #### 4. 自動化スクリプトの実行
 
-`~/dotfiles` に移動後、スクリプトに実行権限を付与して実行します。
+スクリプト実行前に必ず既存の設定のバックアップを取ってください（推奨バックアップ先: ~/.dotfiles-backup/）。スクリプトは既存ファイルを上書きするため、バックアップを推奨します。
+
+例:
 
 ```bash
+# バックアップ（任意）
+mkdir -p ~/.dotfiles-backup
+# 実行例（既定の場所）
 cd ~/dotfiles
 chmod +x setup.sh
 ./setup.sh
+
+# 環境変数で DOTFILES_DIR を指定する例
+export DOTFILES_DIR="$HOME/my-dotfiles"
+./setup.sh
 ```
+
+スクリプトには --dry-run モードが用意されており（一覧表示のみ）、実際に変更を適用する前に何が上書きされるかを確認できます。
+
 
 #### 5. ターミナルの再起動
 

@@ -2,3 +2,9 @@ hidden/*
 !hidden/README.md
 
 .DS_Store
+
+# Backups created by setup.sh
+.dotfiles-backup/
+.dotfiles-backup/*
+# Backup filename pattern
+*.pre-dotfiles-*
