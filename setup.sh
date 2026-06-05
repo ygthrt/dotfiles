@@ -8,7 +8,7 @@ echo "セットアップを開始します..."
 echo "必要なディレクトリを作成しています..."
 mkdir -p ~/.config/zsh
 mkdir -p ~/.config/ghostty
-
+mkdir -p ~/Library/Application\ Support/Code/User
 # =========================================================
 # 2. シンボリックリンクの作成
 # =========================================================
@@ -19,6 +19,9 @@ ln -snf ~/dotfiles/.config/zsh/.zshrc ~/.config/zsh/.zshrc
 ln -snf ~/dotfiles/.config/zsh/hidden ~/.config/zsh/hidden
 ln -snf ~/dotfiles/.config/starship.toml ~/.config/starship.toml
 ln -snf ~/dotfiles/.config/ghostty/config ~/.config/ghostty/config
+
+ln -snf ~/dotfiles/vscode/settings.json ~/Library/Application\ Support/Code/User/settings.json
+ln -snf ~/dotfiles/vscode/keybindings.json ~/Library/Application\ Support/Code/User/keybindings.json
 
 # =========================================================
 # 3. Homebrew のインストールとパス設定
