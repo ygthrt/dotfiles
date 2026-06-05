@@ -91,6 +91,14 @@ source ~/.zshrc
 今後の環境更新や、なぜこの構成になっているかを思い出すためのメモです。
 
 ### 1. シンボリックリンクによる一元管理
+
+#### 対応アーキテクチャ
+このリポジトリと setup.sh は macOS (Intel と Apple Silicon) 向けに設計されています。Homebrew のインストール先はアーキテクチャにより異なります：
+
+- Apple Silicon (arm64): /opt/homebrew
+- Intel (x86_64): /usr/local
+
+setup.sh は実行時にアーキテクチャを検出し、適切な Homebrew プレフィクスを使用して shellenv を設定します。
 設定ファイルの実体はすべて `~/dotfiles` 内に配置し、Macが本来読み込む場所（`~/.zshrc` や `~/.config/ghostty/config` など）には、`setup.sh` を使って**シンボリックリンク（ショートカット）**を張る設計になっています。
 
 **【新しい設定を管理対象に加える手順】**

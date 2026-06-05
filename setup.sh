@@ -13,6 +13,13 @@ mkdir -p "${HOME}/Library/Application Support/Code/User"
 mkdir -p ~/.config/mise
 
 # DOTFILES_DIR: 環境変数 > スクリプト引数 > デフォルト
+# 引数の先頭に --dry-run を指定できるようにする
+DRY_RUN=0
+if [ "$1" = "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
+
 if [ -n "$DOTFILES_DIR" ]; then
   DOTFILES_DIR="$DOTFILES_DIR"
 elif [ -n "$1" ]; then
@@ -29,8 +36,22 @@ backup_if_needed() {
     mkdir -p "$BACKUP_DIR"
     ts=$(date +%Y%m%d%H%M%S)
     bn=$(basename "$target")
-    mv "$target" "$BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
-    echo "バックアップ: $target -> $BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] バックアップ予定: $target -> $BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
+    else
+      mv "$target" "$BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
+      echo "バックアップ: $target -> $BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
+    fi
+  fi
+}
+
+# dry-run helper for commands
+run_cmd() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] $*"
+    return 0
+  else
+    eval "$@"
   fi
 }
 
@@ -95,9 +116,14 @@ fi
 # =========================================================
 echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
-if ! brew bundle; then
-  echo "brew bundle に失敗しました。ログを確認してください。" >&2
-  exit 1
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "[DRY-RUN] cd $DOTFILES_DIR"
+  echo "[DRY-RUN] brew bundle (will not run)"
+else
+  if ! brew bundle; then
+    echo "brew bundle に失敗しました。ログを確認してください。" >&2
+    exit 1
+  fi
 fi
 
 # =========================================================
@@ -112,10 +138,26 @@ if command -v opam &> /dev/null; then
         echo "opam を初期化し、MetaOCaml (5.3.0+BER) を構築します..."
         
         # ユーザーへの質問をスキップ(-y)して自動初期化
-        opam init --disable-sandboxing --reinit -y
+        if [ "$DRY_RUN" -eq 1 ]; then
+          echo "[DRY-RUN] opam init --disable-sandboxing --reinit -y"
+        else
+          opam init --disable-sandboxing --reinit -y
+          if [ $? -ne 0 ]; then
+            echo "opam init が失敗しました" >&2
+            exit 1
+          fi
+        fi
         
         # MetaOCamlの環境を自動作成(-y)
-        opam switch create metaocaml 5.3.0+BER -y
+        if [ "$DRY_RUN" -eq 1 ]; then
+          echo "[DRY-RUN] opam switch create metaocaml 5.3.0+BER -y"
+        else
+          opam switch create metaocaml 5.3.0+BER -y
+          if [ $? -ne 0 ]; then
+            echo "opam switch の作成に失敗しました" >&2
+            exit 1
+          fi
+        fi
     else
         echo "opam はすでにセットアップされています。"
     fi
@@ -125,21 +167,33 @@ fi
 if command -v mise &> /dev/null; then
   echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
-    if ! mise trust "$DOTFILES_DIR/.config/mise/config.toml"; then
-      echo "mise trust に失敗しました" >&2
-      exit 1
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] mise trust $DOTFILES_DIR/.config/mise/config.toml"
+    else
+      if ! mise trust "$DOTFILES_DIR/.config/mise/config.toml"; then
+        echo "mise trust に失敗しました" >&2
+        exit 1
+      fi
     fi
   else
     echo "mise 設定ファイルが見つかりません: $DOTFILES_DIR/.config/mise/config.toml" >&2
   fi
 
-  if ! mise install; then
-    echo "mise install に失敗しました" >&2
-    exit 1
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] mise install"
+  else
+    if ! mise install; then
+      echo "mise install に失敗しました" >&2
+      exit 1
+    fi
   fi
 else
   echo "mise が見つかりません。brew bundle で mise がインストールされているか確認してください。" >&2
 fi
 
-echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "[DRY-RUN] すべての処理がスキップされました。実行時は --dry-run を外してください。"
+else
+  echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"
+fi
 echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"
