@@ -1,6 +1,7 @@
 brew "fzf"
 brew "gh"
 brew "jq"
+brew "mise"
 brew "opam"
 brew "ripgrep"
 brew "starship"

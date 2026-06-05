@@ -73,10 +73,23 @@ source ~/.zshrc
 Homebrewでインストールしたコマンドラインツール、Cask（EdgeなどのGUIアプリ）、および VS Code の拡張機能は、すべて `Brewfile` という設計図に記録されています。
 
 **【新しくアプリを入れた時の更新手順】**
+
 新しくアプリやVS Codeの拡張機能をインストールした場合は、以下のコマンドを実行することで `Brewfile` を全自動で最新状態に上書き（更新）できます。
 ```bash
 cd ~/dotfiles
-brew bundle dump -f
+brew-dump
+```
+
+**運用上のポイント：なぜ専用のエイリアスを使うのか？**
+
+通常の brew bundle dump をそのまま実行すると、mise 等でインストールした言語系パッケージ（npm や go など）まで Homebrew の管理物として誤検知され、Brewfile に混入してしまいます（次回セットアップ時にエラーの原因となります）。
+
+これを防ぐため、当dotfilesでは .zshrc に以下のエイリアスを設定しています。実行する一瞬だけ環境変数（PATH）をシステム標準状態に隔離することで、純粋なHomebrewの管理物のみを安全に書き出す仕組みになっています。
+
+**※エイリアスの定義内容(`.zshrc`に記載)**
+
+```bash
+alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" brew bundle dump --force'
 ```
 
 ### 3. 機密情報の安全な隔離（hidden フォルダ）

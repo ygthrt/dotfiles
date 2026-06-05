@@ -9,6 +9,7 @@ echo "必要なディレクトリを作成しています..."
 mkdir -p ~/.config/zsh
 mkdir -p ~/.config/ghostty
 mkdir -p ~/Library/Application\ Support/Code/User
+mkdir -p ~/.config/mise
 # =========================================================
 # 2. シンボリックリンクの作成
 # =========================================================
@@ -22,6 +23,9 @@ ln -snf ~/dotfiles/.config/ghostty/config ~/.config/ghostty/config
 
 ln -snf ~/dotfiles/vscode/settings.json ~/Library/Application\ Support/Code/User/settings.json
 ln -snf ~/dotfiles/vscode/keybindings.json ~/Library/Application\ Support/Code/User/keybindings.json
+
+ln -snf ~/dotfiles/.config/mise/config.toml ~/.config/mise/config.toml
+mise trust ~/dotfiles/.config/mise/config.toml
 
 # =========================================================
 # 3. Homebrew のインストールとパス設定
@@ -67,5 +71,8 @@ if command -v opam &> /dev/null; then
         echo "opam はすでにセットアップされています。"
     fi
 fi
+
+echo "Installing tools via mise..."
+mise install
 
 echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"

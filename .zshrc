@@ -20,7 +20,15 @@ setopt SHARE_HISTORY
 # cdで移動するたびに履歴を保存し、「cd -[Tab]」で過去のディレクトリにアクセスできるようにする
 setopt AUTO_PUSHD
 
+# Homebrew専用のクリーンなPATHでBrewfileを出力する
+alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" brew bundle dump --force'
+
 # ==========================================
 # opam (OCaml パッケージマネージャー)
 # ==========================================
 [[ ! -r ~/.opam/opam-init/init.zsh ]] || source ~/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
+
+# ==========================================
+# mise (環境構築・バージョン管理)
+# ==========================================
+eval "$(mise activate zsh)"

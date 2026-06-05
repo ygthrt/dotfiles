@@ -1,0 +1,15 @@
+[tools]
+deno = "latest"
+go = "latest"
+gradle = "latest"
+java = "latest"
+maven = "latest"
+node = "lts"
+pnpm = "latest"
+python = "latest"
+ruby = "latest"
+
+[settings]
+
+[settings.ruby]
+compile = false
