@@ -1,92 +1,71 @@
 # Copilot Instructions for dotfiles リポジトリ
 
-## リポジトリの目的
-macOS の設定ファイルを一元管理し、シンボリックリンクと Homebrew を使用して環境セットアップを自動化するリポジトリです。新しいマシンへのセットアップを 1 つのスクリプトで再現可能にします。
+## リポジトリの目的と基本方針
+macOS の設定ファイルを一元管理し、シンボリックリンクと Homebrew、mise を使用して環境セットアップを完全に自動化するリポジトリです。
+このリポジトリにおける最も重要な開発方針は **「べき等性（何度実行しても安全）」** と **「副作用のない完全なドライラン環境の維持」** です。
+
+## コーディング規約・絶対ルール (CRITICAL)
+AI はコードを提案・生成する際、必ず以下のルールを厳守してください。
+
+### 1. 破壊的変更には必ず `execute_cmd` ラッパーを使用する
+`setup.sh` 内でシステムに状態変化をもたらすコマンド（`mkdir`, `ln`, `mv`, `curl`, ファイルへの `echo ... >>` など）を記述する場合は、直接実行せず、必ず `execute_cmd` 関数を経由させてください。
+- **理由**: `./setup.sh --dry-run` 実行時にシステムを一切汚さず、変数が展開された正確な実行予定パスを出力させるため。
+- **正しい文法**: `execute_cmd "ln -snf \"$DOTFILES_DIR/.config/app/config\" ~/.config/app/config"`
+- **注意**: 変数が実行前に展開されるようダブルクォーテーション `" "` で囲み、内部のクォーテーションやスペースを含むパスは適切にエスケープ（`\"` など）してください。過剰なシングルクォーテーションによる変数の無効化は避けてください。
+
+### 2. Brewfile の更新は専用エイリアス `brew-dump` を使う
+Homebrew に新しいパッケージを追加した際、絶対に標準の `brew bundle dump` コマンドを使用（または提案）しないでください。
+- **理由**: `mise` や `npm` 等でインストールされた言語系のツールまで Homebrew 管理物として混入し、次回セットアップ時にエラーとなるのを防ぐため。
+- **正しい手順**: 隔離された PATH を用いる `.zshrc` 内のカスタムエイリアス `brew-dump` を実行するようユーザーに案内してください。
+
+### 3. 機密情報（Secrets）の直書き厳禁
+API キー、パスワード、特定のマシン固有の環境変数は、メインの設定ファイル（`.zshrc` など）に絶対に記述しないでください。
+- **対応方法**: `~/.config/zsh/hidden/` 内に `.zsh` ファイルを作成し、そこに記述するよう設計されています（`.gitignore` 済み）。
+
+### 4. べき等性（Idempotency）の担保
+スクリプトは何度実行しても同じ状態になるよう設計してください。
+- **シンボリックリンク**: 常に `ln -snf` を使用し、安全に上書きする。
+- **ファイルへの追記**: `grep -q` などを用いて、既に同じ設定が追記済みでないか確認してから書き込む。
 
 ## アーキテクチャ概要
 
-### シンボリックリンクベースの設定管理
-- **設計**: 設定ファイルは `~/dotfiles/` に保存され、標準的な場所（`~/.zshrc`、`~/.config/zsh/` など）にシンボリックリンクされる
-- **メリット**: すべての設定の単一情報源、バージョン管理が容易、新しいマシンへのクローンが簡単
-- **主要な場所**:
-  - ホームディレクトリのドットファイル: `~/.<filename>` → `dotfiles/.<filename>`
-  - `.config` 配下のファイル: `~/.config/<app>/<config>` → `dotfiles/.config/<app>/<config>`
-  - 隠し設定ディレクトリ: `~/.config/<app>/hidden` → `dotfiles/.config/<app>/hidden`（機密情報用、gitignore対象）
+### アプリケーションとツールの管理
+- **Homebrew**: `Brewfile` に一元管理（Formula, Cask, VS Code extensions）。
+- **mise**: `.config/mise/config.toml` にて言語（Node.js, Python, Go, Java 等）を管理。`setup.sh` 実行時に `mise trust` と `mise install` を自動実行。
+- **opam**: OCaml 環境。`setup.sh` 内で初期化を自動化。
 
-### Homebrew パッケージ管理
-- **Brewfile**: 管理対象のすべてのパッケージ（formula、cask、VS Code拡張機能）をリスト化
-- **更新方法**: 新しいパッケージをインストール後、`brew bundle dump -f` で自動更新
-- **setup.sh**: `brew bundle` を実行してすべてのパッケージをインストール
+## よく使うタスク（ユーザーへの提案用）
 
-### 自動セットアップの流れ
-`setup.sh` は以下の順序でセットアップを実行：
-1. 必要なディレクトリを作成（`~/.config/zsh`、`~/.config/ghostty`）
-2. すべてのシンボリックリンクを作成（`-snf` で既存ファイルを安全に上書き）
-3. Homebrew がない場合はインストール、`~/.zprofile` を設定（重複チェック付き）
-4. `brew bundle` を実行してすべてのパッケージをインストール
-
-## キーとなる規約
-
-### 新しい設定ファイルを追加する場合
-1. 設定ファイルを `~/dotfiles/` に適切な階層に配置（例: `dotfiles/.config/app/config`）
-2. `setup.sh` にシンボリックリンク行を追加: `ln -snf ~/dotfiles/.config/app/config ~/.config/app/config`
-3. 設定ファイルと setup.sh の変更をコミット
-4. **注意**: 既存のシンボリックリンクを安全に上書きするため `ln -snf` を使用
-
-### 機密情報とマシン固有の設定の扱い
-- API キー、パスワード、ローカルのみの設定は `~/.config/zsh/hidden/` に配置
-- これらのファイルは gitignore の対象（`.gitignore`: `hidden/*`、ただし `hidden/README.md` は除外）
-- 新しいマシンで setup.sh を実行した後、手動でこれらのファイルを再作成
-- 例: `~/.config/zsh/hidden/secrets.zsh` に機密情報を記述
-
-### パッケージリストの更新
-Homebrew で新しいパッケージをインストール後：
+### 安全な実行シミュレーション（ドライラン）
 ```bash
-cd ~/dotfiles
-brew bundle dump -f
-```
-このコマンドで `Brewfile` を現在のシステム状態で再生成します。更新された Brewfile をコミット。
+./setup.sh --dry-run
 
-### シェル設定の構造
-- `~/.zshrc`（dotfiles ルート）は最小限のエントリーポイントで、`~/.config/zsh/.zshrc` をソースする
-- `~/.config/zsh/.zshrc` に実際の zsh 設定を記述
-- 隠しファイルは自動でソース: `~/.config/zsh/hidden/` 内のすべての `.zsh` ファイルが読み込まれる
-
-## よく使うタスク
-
-### セットアップスクリプトの構文確認
-```bash
-bash -n setup.sh
 ```
 
-### 新しいマシンでセットアップを実行
+※スクリプトの修正を提案した後は、本番実行の前にこのコマンドでパスの展開結果を確認するようユーザーに促してください。
+
+### 新しいマシンのセットアップ（本番）
+
 ```bash
 cd ~/dotfiles
 chmod +x setup.sh
 ./setup.sh
-source ~/.zshrc
+
 ```
 
-### セットアップスクリプトのドライラン（実行せずに確認）
+### パッケージリスト (Brewfile) の更新
+
 ```bash
-bash -x setup.sh 2>&1 | head -50
+brew install <package-name>
+cd ~/dotfiles
+brew-dump
+
 ```
 
-### 単一のパッケージを更新
-```bash
-brew install package-name
-brew bundle dump -f
-```
-その後、更新された Brewfile をコミット。
+## CI / 自動テスト (GitHub Actions) に関するコンテキスト
 
-## セットアップスクリプトのロジック上の注意点
-- **重複排除**: `.zprofile` への Homebrew shellenv 行は追加前に確認され、重複を防止
-- **シンボリックリンクの上書き**: すべての `ln -snf` 呼び出しは既存ファイル/シンボリックリンクを安全に上書き
-- **エラーハンドリング**: Homebrew インストールはリモート URL から実行、新規セットアップ時はネットワーク接続を確認
-- **アーキテクチャ検出**: スクリプトは Apple Silicon（M1/M2/M3）の Homebrew パス `/opt/homebrew/bin/brew` を想定
+このリポジトリは GitHub Actions (`.github/workflows/test.yaml`) により、クリーンな macOS 環境でのインストールテストを行っています。
 
-## トラッキング対象外のファイル
-- `.gitignore` で `hidden/*` 内のすべてのファイルを除外（ただし `hidden/README.md` は除外）
-- `.DS_Store` はグローバルで gitignore 対象
-- Homebrew インストール自体はトラッキング対象ではなく、setup.sh により必要に応じてインストール
-
+* `setup.sh` はデフォルトの `~/dotfiles` ではなく、CI環境の `$PWD` を `DOTFILES_DIR` として受け取り実行されます。
+* `mise` 実行時の GitHub API レート制限エラー（403 Forbidden）を回避するため、CI環境から `GITHUB_TOKEN` が注入されています。
+* `set -e` が有効なため、コマンドの終了コードが `0` 以外になると CI が即座に失敗します。`grep` による検索など、仕様として非ゼロを返す可能性のある処理は `|| true` 等で適切にハンドリングしてください。
