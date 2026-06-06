@@ -1,0 +1,36 @@
+name: Test Setup
+
+# どのタイミングでテストを実行するか
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # 手動で実行できるボタンを追加
+
+jobs:
+  test-mac:
+    # GitHubが用意する最新のmacOS仮想環境を使用
+    runs-on: macos-latest
+
+    steps:
+      # 1. あなたのリポジトリのコードをこの仮想Macにダウンロードする
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. setup.sh を実行する
+      - name: Run setup.sh
+        run: |
+          # 実行権限を付与
+          chmod +x setup.sh
+          
+          # CI環境なので --dry-run はつけず、本当にインストールまで走らせる
+          ./setup.sh
+
+      # 3. (オプション) もしエラーが起きたら、ログファイルの中身を表示する
+      - name: Show log file on failure
+        if: failure()
+        run: |
+          if [ -f "$HOME/.dotfiles-setup.log" ]; then
+            cat "$HOME/.dotfiles-setup.log"
+          fi
