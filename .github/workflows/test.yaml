@@ -20,6 +20,9 @@ jobs:
 
       # 2. setup.sh を実行する
       - name: Run setup.sh
+        # GitHub Actions が自動で用意するトークンを環境変数として渡す
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 実行権限を付与
           chmod +x setup.sh
