@@ -25,7 +25,7 @@ jobs:
           chmod +x setup.sh
           
           # CI環境なので --dry-run はつけず、本当にインストールまで走らせる
-          ./setup.sh
+          DOTFILES_DIR="$PWD" ./setup.sh
 
       # 3. (オプション) もしエラーが起きたら、ログファイルの中身を表示する
       - name: Show log file on failure
