@@ -7,5 +7,15 @@
     {
         "key": "alt+cmd+[Minus]",
         "command": "editor.action.fontZoomOut"
+    },
+    {
+        "key": "alt+cmd+[Semicolon]",
+        "command": "workbench.action.terminal.fontZoomIn",
+        "when": "terminalProcessSupported"
+    },
+    {
+        "key": "alt+cmd+[Minus]",
+        "command": "workbench.action.terminal.fontZoomOut",
+        "when": "terminalProcessSupported"
     }
 ]

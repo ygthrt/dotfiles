@@ -55,5 +55,6 @@
         "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.ilg", "*.lof", "*.log", "*.lot", "*.toc", "*.fls", "*.fdb_latexmk", "*.pdfsync", "*.synctex.gz", "*.dvi"
     ],
 
-    "latex-workshop.view.pdf.viewer": "tab"
+    "latex-workshop.view.pdf.viewer": "tab",
+    "terminal.integrated.fontSize": 22
 }
