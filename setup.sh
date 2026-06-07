@@ -38,6 +38,7 @@ execute_cmd "mkdir -p ~/.config/zsh"
 execute_cmd "mkdir -p ~/.config/ghostty"
 execute_cmd "mkdir -p \"${HOME}/Library/Application Support/Code/User\""
 execute_cmd "mkdir -p ~/.config/mise"
+execute_cmd "mkdir -p ~/.copilot"
 
 if [ -n "$DOTFILES_DIR" ]; then
   DOTFILES_DIR="$DOTFILES_DIR"
@@ -138,6 +139,9 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/.config/mise/config.toml\" ~/.config/mise/c
 
 backup_if_needed ~/.config/nvim
 execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
+
+backup_if_needed ~/.copilot/copilot-instructions.md
+execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
 
 # =========================================================
 # 3. Homebrew のインストールとパス設定
