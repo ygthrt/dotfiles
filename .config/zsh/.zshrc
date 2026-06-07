@@ -1,6 +1,6 @@
 ##### Language/Editor #####
-export LANG=en_US.UTF-8
-export EDITOR="vim"
+export LANG=ja_JP.UTF-8
+export EDITOR="nvim"
 
 #### starship
 eval "$(starship init zsh)"
@@ -43,6 +43,9 @@ eval "$(mise activate zsh)"
 
 # Homebrew専用のクリーンなPATHでBrewfileを出力する
 alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" brew bundle dump --force'
+
+alias vim="nvim"
+alias vi="nvim"
 
 # cdコマンドを省略してディレクトリ名のみで移動できる（今回設定したもの）
 setopt AUTO_CD

@@ -121,7 +121,7 @@ backup_if_needed ~/.config/zsh/hidden
 execute_cmd "ln -snf \"$DOTFILES_DIR/.config/zsh/hidden\" ~/.config/zsh/hidden"
 
 backup_if_needed ~/.config/starship.toml
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/starship.toml\" ~/.config/starship.toml"
+execute_cmd "ln -snf \"$DOTFILES_DIR/.config/starship/starship.toml\" ~/.config/starship.toml"
 
 backup_if_needed ~/.config/ghostty/config
 execute_cmd "ln -snf \"$DOTFILES_DIR/.config/ghostty/config\" ~/.config/ghostty/config"
@@ -135,6 +135,9 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/vscode/keybindings.json\" \"${HOME}/Library
 backup_if_needed ~/.config/mise/config.toml
 execute_cmd "ln -snf \"$DOTFILES_DIR/.config/mise/config.toml\" ~/.config/mise/config.toml"
 # mise trust は mise が利用可能になってから実行する（brew bundle 後）
+
+backup_if_needed ~/.config/nvim
+execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
 
 # =========================================================
 # 3. Homebrew のインストールとパス設定
