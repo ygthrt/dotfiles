@@ -183,8 +183,8 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] brew bundle (will not run)"
 else
   if [ "$CI" = "true" ]; then
-    # CI環境では、GUIアプリ（cask）とMacアプリ（mas）をスキップして高速化・容量節約
-    run_and_log "brew bundle --without cask --without mas" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
+    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
     run_and_log "brew bundle" || { echo "brew bundle に失敗しました" >&2; exit 1; }
