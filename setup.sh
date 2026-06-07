@@ -182,7 +182,13 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
   echo "[DRY-RUN] brew bundle (will not run)"
 else
-  run_and_log "brew bundle" || { echo "brew bundle に失敗しました。$LOGFILE を確認してください" >&2; exit 1; }
+  if [ "$CI" = "true" ]; then
+    # CI環境では、GUIアプリ（cask）とMacアプリ（mas）をスキップして高速化・容量節約
+    run_and_log "brew bundle --without cask --without mas" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+  else
+    # ローカルのMacでは通常通りすべてインストール
+    run_and_log "brew bundle" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+  fi
 fi
 
 # =========================================================

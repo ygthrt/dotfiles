@@ -18,6 +18,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Free up disk space on CI runner
+        run: |
+          echo "CI環境の空き容量を確保するために不要なプリインストールアプリを削除します..."
+          # 最初から入っている巨大なXcode（約30GB）とシミュレーターを削除
+          sudo rm -rf /Applications/Xcode*.app
+          sudo rm -rf /Library/Developer/CoreSimulator/Profiles/Runtimes/*
+          echo "現在のディスク空き容量:"
+          df -h
+
       # 2. setup.sh を実行する
       - name: Run setup.sh
         # GitHub Actions が自動で用意するトークンを環境変数として渡す
