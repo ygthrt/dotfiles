@@ -10,6 +10,18 @@ source $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 #### fast syntax highlighting
 source $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+# ==========================================
+# Completion settings
+# ==========================================
+# Initialize completion system
+autoload -Uz compinit && compinit
+
+# Enable menu selection for completion candidates
+zstyle ':completion:*' menu select
+
+# Case-insensitive completion and partial matching
+zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+l:|=* r:|=*'
+
 #### History search with arrow keys #####
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
