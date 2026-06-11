@@ -1,5 +1,6 @@
-hidden/*
-!hidden/README.md
+.config/zsh/hidden/*
+!.config/zsh/hidden/README.md
+!.config/zsh/hidden/secrets.zsh.example
 
 .DS_Store
 
