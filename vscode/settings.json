@@ -20,29 +20,45 @@
     // LaTeX Workshop の設定
     // ==========================================
     "latex-workshop.latex.tools": [
-        {
-            "name": "latexmk (platex)",
-            "command": "latexmk",
-            "args": [
-                "-e", "$latex=q/platex %O -synctex=1 -interaction=nonstopmode %S/",
-                "-e", "$bibtex=q/pbibtex %O %B/",
-                "-e", "$makeindex=q/mendex %O -o %D %S/",
-                "-e", "$dvipdf=q/dvipdfmx %O -o %D %S/",
-                "-pdfdvi",
-                "-outdir=%OUTDIR%",
-                "%DOC%"
-            ]
-        }
-    ],
-    "latex-workshop.latex.recipes": [
-        {
-            "name": "platex -> dvipdfmx",
-            "tools": [
-                "latexmk (platex)"
-            ]
-        }
-    ],
-    "latex-workshop.latex.autoBuild.run": "onSave",
+    {
+        "name": "latexmk (platex)",
+        "command": "latexmk",
+        "args": [
+            "-e", "$latex=q/platex %O -synctex=1 -interaction=nonstopmode %S/",
+            "-e", "$bibtex=q/pbibtex %O %B/",
+            "-e", "$makeindex=q/mendex %O -o %D %S/",
+            "-e", "$dvipdf=q/dvipdfmx %O -o %D %S/",
+            "-pdfdvi",
+            "-outdir=%OUTDIR%",
+            "%DOC%"
+        ]
+    },
+    {
+        "name": "export to ChatGPT Drive",
+        "command": "bash",
+        "args": [
+            "-lc",
+            "REPO_ROOT=$(git -C \"$1\" rev-parse --show-toplevel) && \"$REPO_ROOT/scripts/export_to_chatgpt_drive.sh\" \"$2\" \"$3\" \"$4\" \"$1\"",
+            "bash",
+            "%DIR%",
+            "%DOC%",
+            "%DOCFILE%",
+            "%OUTDIR%"
+        ],
+        "cwd": "%DIR%"
+    }
+],
+"latex-workshop.latex.recipes": [
+    {
+        "name": "platex -> dvipdfmx -> export to Drive",
+        "tools": [
+            "latexmk (platex)",
+            "export to ChatGPT Drive"
+        ]
+    }
+],
+"latex-workshop.latex.recipe.default": "first",
+"latex-workshop.latex.autoBuild.run": "onSave",
     
     // ビルド成功時に自動でお掃除する設定
     "latex-workshop.latex.autoClean.run": "onBuilt",
@@ -56,5 +72,6 @@
     ],
 
     "latex-workshop.view.pdf.viewer": "tab",
-    "terminal.integrated.fontSize": 22
+    "terminal.integrated.fontSize": 22,
+    "workbench.editor.empty.hint": "hidden"
 }

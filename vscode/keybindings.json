@@ -1,11 +1,11 @@
 // 既定値を上書きするには、このファイル内にキー バインドを挿入します
 [
     {
-        "key": "alt+cmd+[Semicolon]",
+        "key": "cmd+[Semicolon]",
         "command": "editor.action.fontZoomIn"
     },
     {
-        "key": "alt+cmd+[Minus]",
+        "key": "cmd+[Minus]",
         "command": "editor.action.fontZoomOut"
     },
     {
