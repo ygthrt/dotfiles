@@ -5,6 +5,28 @@ export EDITOR="nvim"
 #### starship
 eval "$(starship init zsh)"
 
+#### mise/codex
+# Codex opens this dotfiles repo in fresh worktrees. In that context, mise
+# discovers .config/mise/config.toml as a local project config and asks for
+# trust for every new worktree path. Stop local discovery there; the installed
+# global ~/.config/mise/config.toml still applies.
+_mise_set_codex_dotfiles_ceiling() {
+  [[ "$PWD" == "$HOME/.codex/worktrees/"* ]] || return 0
+
+  local root
+  root="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || return 0
+  [[ "$root" == "$HOME/.codex/worktrees/"*"/dotfiles" ]] || return 0
+  [[ -f "$root/.config/mise/config.toml" ]] || return 0
+
+  case ":${MISE_CEILING_PATHS:-}:" in
+    *":$PWD:"*) ;;
+    *) export MISE_CEILING_PATHS="$PWD${MISE_CEILING_PATHS:+:$MISE_CEILING_PATHS}" ;;
+  esac
+}
+autoload -Uz add-zsh-hook
+_mise_set_codex_dotfiles_ceiling
+add-zsh-hook chpwd _mise_set_codex_dotfiles_ceiling
+
 #### autosuggestions
 source $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 #### fast syntax highlighting
@@ -73,4 +95,3 @@ setopt SHARE_HISTORY
 
 # cdで移動するたびに履歴を保存し、「cd -[Tab]」で過去のディレクトリにアクセスできるようにする
 setopt AUTO_PUSHD
-
