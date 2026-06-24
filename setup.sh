@@ -39,6 +39,7 @@ execute_cmd "mkdir -p ~/.config/ghostty"
 execute_cmd "mkdir -p \"${HOME}/Library/Application Support/Code/User\""
 execute_cmd "mkdir -p ~/.config/mise"
 execute_cmd "mkdir -p ~/.copilot"
+execute_cmd "mkdir -p ~/.codex"
 
 if [ -n "$DOTFILES_DIR" ]; then
   DOTFILES_DIR="$DOTFILES_DIR"
@@ -142,6 +143,18 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
 
 backup_if_needed ~/.copilot/copilot-instructions.md
 execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
+
+# Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
+CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
+if [ -e "$CODEX_CONFIG_TARGET" ] || [ -L "$CODEX_CONFIG_TARGET" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] Codex config は既に存在するためスキップします: $CODEX_CONFIG_TARGET"
+  else
+    echo "Codex config は既に存在するためスキップします: $CODEX_CONFIG_TARGET"
+  fi
+else
+  execute_cmd "cp \"$DOTFILES_DIR/.config/codex/config.toml\" \"$CODEX_CONFIG_TARGET\""
+fi
 
 # =========================================================
 # 3. Homebrew のインストールとパス設定

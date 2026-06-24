@@ -99,11 +99,13 @@ source ~/.zshrc
 - Intel (x86_64): /usr/local
 
 setup.sh は実行時にアーキテクチャを検出し、適切な Homebrew プレフィクスを使用して shellenv を設定します。
-設定ファイルの実体はすべて `~/dotfiles` 内に配置し、Macが本来読み込む場所（`~/.zshrc` や `~/.config/ghostty/config` など）には、`setup.sh` を使って**シンボリックリンク（ショートカット）**を張る設計になっています。
+設定ファイルの実体は基本的に `~/dotfiles` 内に配置し、Macが本来読み込む場所（`~/.zshrc` や `~/.config/ghostty/config` など）には、`setup.sh` を使って**シンボリックリンク（ショートカット）**を張る設計になっています。
+
+例外として、Codex の `~/.codex/config.toml` はシンボリックリンクではなく、初回セットアップ時にだけ `.config/codex/config.toml` をコピーします。Codex の設定ファイルには trusted projects、認証情報、ログ、セッション、キャッシュ、ローカル絶対パスを含む状態が混ざりやすいため、既存の `~/.codex/config.toml` がある場合は上書きしません。
 
 **【新しい設定を管理対象に加える手順】**
 1. 設定ファイルを `~/dotfiles` 内の適切な階層に移動する。
-2. `setup.sh` に `ln -snf ~/dotfiles/[ファイルパス] ~/.config/[ファイルパス]` のように追記する。
+2. `setup.sh` に `ln -snf ~/dotfiles/[ファイルパス] ~/.config/[ファイルパス]` のように追記する。初回配置だけにしたい設定は、既存ファイルがない場合のみ `cp` する。
 3. GitでコミットしてPushする。
 
 ### 2. アプリやVS Code拡張機能の自動管理 (Brewfile)
@@ -129,7 +131,18 @@ brew-dump
 alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" brew bundle dump --force'
 ```
 
-### 3. 機密情報の安全な隔離（hidden フォルダ）
+### 3. Codex の初期設定（初回配置のみ）
+
+Codex の最小初期設定は `.config/codex/config.toml` に置いています。`setup.sh` は `~/.codex/config.toml` が存在しない場合のみコピーし、既に存在する場合はスキップします。
+
+このリポジトリでは、以下のようなローカル状態は管理しません。
+
+* trusted projects などのディレクトリ信頼設定
+* `auth.json` などの認証情報
+* logs、sessions、cache、worktrees などの実行時データ
+* マシン固有の絶対パスを含む設定
+
+### 4. 機密情報の安全な隔離（hidden フォルダ）
 APIキー、パスワード、特定のPCでしか使わない特殊な設定などは、GitHubに絶対にアップロードしない仕組みを作っています。
 
 * 場所: ~/.config/zsh/hidden/
