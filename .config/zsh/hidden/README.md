@@ -9,12 +9,12 @@ cp secrets.zsh.example secrets.zsh
 # 必要に応じて編集
 ```
 
-2. `secrets.zsh` の中には機密情報を直接書いてください。例:
+2. `secrets.zsh` の中には、ローカルでだけ使う値を書いてください。例:
 
 ```bash
 # secrets.zsh
-export MY_API_KEY="your-api-key-here"
-export AWS_SECRET_ACCESS_KEY="your-secret"
+export EXAMPLE_SERVICE_API_KEY="replace-with-local-value"
+export EXAMPLE_SERVICE_TOKEN="replace-with-local-value"
 ```
 
 3. このディレクトリは .gitignore により Git 管理から除外されています。リポジトリに機密情報が含まれないことを確認してください。

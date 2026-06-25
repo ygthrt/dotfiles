@@ -35,6 +35,18 @@ cp secrets.zsh.example secrets.zsh
 
 `~/.config/zsh/hidden/` 内の `.zsh` ファイルは shell 起動時に自動で読み込まれます。信頼できる内容だけを配置してください。
 
+## public repository の確認
+
+公開前や公開後の大きな変更時は、秘密情報やローカル状態が混ざっていないか確認します。
+
+```bash
+rg -n --hidden -i "(secret|token|password|api[_-]?key|credential|private[_-]?key)" .
+git ls-files
+git grep -n -I -E "(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)" $(git rev-list --all)
+```
+
+実際の秘密情報が履歴に入っていた場合は、現在のファイルから消すだけでは不十分です。該当するキーを失効・再発行し、必要に応じて履歴の扱いを見直します。
+
 ## 新しい設定を管理対象に追加する
 
 新しい設定ファイルを dotfiles で管理する場合は、次の順で追加します。
