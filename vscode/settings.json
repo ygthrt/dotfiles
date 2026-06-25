@@ -72,6 +72,6 @@
     ],
 
     "latex-workshop.view.pdf.viewer": "tab",
-    "terminal.integrated.fontSize": 22,
+    "terminal.integrated.fontSize": 17,
     "workbench.editor.empty.hint": "hidden"
 }

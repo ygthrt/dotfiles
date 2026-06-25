@@ -144,6 +144,9 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
 backup_if_needed ~/.copilot/copilot-instructions.md
 execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
 
+backup_if_needed ~/AGENTS.md
+execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/AGENTS.md"
+
 # Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
 CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
 if [ -e "$CODEX_CONFIG_TARGET" ] || [ -L "$CODEX_CONFIG_TARGET" ]; then
