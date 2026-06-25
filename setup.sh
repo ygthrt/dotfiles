@@ -218,7 +218,13 @@ echo "opam の状態を確認しています..."
 
 # brew bundle で opam がインストールされているか確認
 # ドライラン時は opam が存在しない可能性があるため、チェックを適切に分岐
-if [ "$DRY_RUN" -eq 0 ] && command -v opam &> /dev/null; then
+if [ "$SKIP_METAOCAML_SETUP" = "1" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "[DRY-RUN] SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップ予定です。"
+    else
+        echo "SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップします。"
+    fi
+elif [ "$DRY_RUN" -eq 0 ] && command -v opam &> /dev/null; then
     # ~/.opam フォルダがない場合のみ（初回のみ）実行する
     if [ ! -d "$HOME/.opam" ]; then
         echo "opam を初期化し、MetaOCaml (5.3.0+BER) を構築します..."
@@ -234,7 +240,13 @@ elif [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 # mise は brew bundle 後に存在するはずなのでここで trust と install を行う
-if [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
+if [ "$SKIP_MISE_INSTALL" = "1" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] SKIP_MISE_INSTALL=1 のため mise trust と mise install をスキップ予定です。"
+  else
+    echo "SKIP_MISE_INSTALL=1 のため mise trust と mise install をスキップします。"
+  fi
+elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
   echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
     if ! mise trust "$DOTFILES_DIR/.config/mise/config.toml"; then

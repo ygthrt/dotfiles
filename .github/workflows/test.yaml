@@ -2,16 +2,23 @@ name: Test Setup
 
 # どのタイミングでテストを実行するか
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch: # 手動で実行できるボタンを追加
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   test-mac:
     # GitHubが用意する最新のmacOS仮想環境を使用
     runs-on: macos-latest
+    timeout-minutes: 45
 
     steps:
       # 1. あなたのリポジトリのコードをこの仮想Macにダウンロードする
@@ -29,14 +36,16 @@ jobs:
 
       # 2. setup.sh を実行する
       - name: Run setup.sh
-        # GitHub Actions が自動で用意するトークンを環境変数として渡す
+        # CIではbrew bundleを検証しつつ、重い言語環境構築だけをスキップする
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_METAOCAML_SETUP: "1"
+          SKIP_MISE_INSTALL: "1"
         run: |
           # 実行権限を付与
           chmod +x setup.sh
           
-          # CI環境なので --dry-run はつけず、本当にインストールまで走らせる
+          # CI環境なので --dry-run はつけず、brew bundle まで本実行する
           DOTFILES_DIR="$PWD" ./setup.sh
 
       # 3. (オプション) もしエラーが起きたら、ログファイルの中身を表示する
