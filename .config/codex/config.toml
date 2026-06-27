@@ -6,10 +6,18 @@ approvals_reviewer = "user"
 sandbox_mode = "workspace-write"
 
 [sandbox_workspace_write]
-network_access = false
-
-[plugins."computer-use@openai-bundled"]
-enabled = false
+network_access = true
 
 [features]
 memories = false
+
+[features.network_proxy]
+enabled = true
+
+[features.network_proxy.domains]
+"developers.openai.com" = "allow"
+"platform.openai.com" = "allow"
+"api.openai.com" = "allow"
+
+[plugins."computer-use@openai-bundled"]
+enabled = false

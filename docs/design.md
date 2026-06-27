@@ -85,6 +85,10 @@ Codex の最小初期設定は `.config/codex/config.toml` に置いています
 
 `~/.codex/config.toml` はローカル状態が混ざりやすいため、シンボリックリンクではなく初回セットアップ時にだけコピーします。既存の `~/.codex/config.toml` がある場合は上書きしません。
 
+Codex の rules は `.config/codex/rules/default.rules` に最小 seed を置き、`~/.codex/rules/default.rules` が存在しない場合にだけコピーします。rules の `decision = "allow"` は対象コマンドを sandbox 外で承認なし実行する例外なので、原則として広い allow rule は置きません。
+
+sandbox 内コマンドのネットワークは、rules ではなく `sandbox_workspace_write.network_access` と `features.network_proxy` で制御します。初期 seed では OpenAI / Codex 公式サイトに必要なドメインだけを allow します。
+
 汎用の AI エージェント向け指示は `.config/codex/AGENTS.md` に置き、`setup.sh` で `~/AGENTS.md` へシンボリックリンクします。
 
 リポジトリ直下の `AGENTS.md` は、この dotfiles リポジトリ固有の指示です。ホームの `~/AGENTS.md` は、特定リポジトリに固有の指示がない場合に使う汎用指示として扱います。
