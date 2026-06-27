@@ -1,0 +1,5 @@
+# Codex command rules seed.
+#
+# Keep this file minimal. Command allow rules run matching commands outside the
+# sandbox without approval, so network access should be handled by config.toml's
+# sandboxed network_proxy allowlist instead of broad command rules.

@@ -55,6 +55,14 @@ git grep -n -I -E "(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKI
 
 リポジトリ固有の指示は、そのリポジトリの `AGENTS.md` に書きます。ホームの `~/AGENTS.md` には、どのリポジトリでも使える基本方針だけを置きます。
 
+## Codex 設定 seed の更新
+
+Codex の初期設定を変えたい場合は、`.config/codex/config.toml` を編集します。`setup.sh` は `~/.codex/config.toml` が存在しない場合にだけコピーし、既存のローカル設定は上書きしません。
+
+Codex の rules seed は `.config/codex/rules/default.rules` を編集します。`setup.sh` は `~/.codex/rules/default.rules` が存在しない場合にだけコピーし、シンボリックリンクにはしません。
+
+rules の `decision = "allow"` は、対象コマンドを sandbox 外で承認なし実行する設定です。`node`、`bash`、`curl`、`python`、`npm` などの広い allow は避け、sandbox 内ネットワークは `features.network_proxy` のドメイン allowlist で管理します。
+
 ## 新しい設定を管理対象に追加する
 
 新しい設定ファイルを dotfiles で管理する場合は、次の順で追加します。

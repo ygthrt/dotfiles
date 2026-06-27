@@ -40,6 +40,7 @@ execute_cmd "mkdir -p \"${HOME}/Library/Application Support/Code/User\""
 execute_cmd "mkdir -p ~/.config/mise"
 execute_cmd "mkdir -p ~/.copilot"
 execute_cmd "mkdir -p ~/.codex"
+execute_cmd "mkdir -p ~/.codex/rules"
 
 if [ -n "$DOTFILES_DIR" ]; then
   DOTFILES_DIR="$DOTFILES_DIR"
@@ -157,6 +158,18 @@ if [ -e "$CODEX_CONFIG_TARGET" ] || [ -L "$CODEX_CONFIG_TARGET" ]; then
   fi
 else
   execute_cmd "cp \"$DOTFILES_DIR/.config/codex/config.toml\" \"$CODEX_CONFIG_TARGET\""
+fi
+
+# Codex rules は sandbox 外実行の例外なので、初回だけ最小 seed を配置する
+CODEX_RULES_TARGET="$HOME/.codex/rules/default.rules"
+if [ -e "$CODEX_RULES_TARGET" ] || [ -L "$CODEX_RULES_TARGET" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] Codex rules は既に存在するためスキップします: $CODEX_RULES_TARGET"
+  else
+    echo "Codex rules は既に存在するためスキップします: $CODEX_RULES_TARGET"
+  fi
+else
+  execute_cmd "cp \"$DOTFILES_DIR/.config/codex/rules/default.rules\" \"$CODEX_RULES_TARGET\""
 fi
 
 # =========================================================
