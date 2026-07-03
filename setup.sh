@@ -371,51 +371,46 @@ echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
-  echo "[DRY-RUN] brew bundle check --verbose"
+  echo "[DRY-RUN] HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose"
   echo "[DRY-RUN] 必要な依存関係がある場合のみ sudo 認証の事前確認と keep-alive"
-  echo "[DRY-RUN] brew bundle --verbose (will not run)"
+  echo "[DRY-RUN] 不足がある場合のみ brew bundle --verbose"
 else
   if [ "$CI" = "true" ]; then
     # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
     run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
-    if brew bundle check --verbose; then
+    if HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose; then
       echo "Brewfile の依存関係は既に満たされています。"
     else
       echo "Brewfile の依存関係に不足があります。インストール前に sudo 認証を確認します。"
       ensure_sudo_session
+      run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
     fi
-    run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   fi
 fi
 
 # =========================================================
-# 5. opam (OCaml / MetaOCaml) の自動セットアップ
+# 5. opam (OCaml) の状態確認
 # =========================================================
 echo "opam の状態を確認しています..."
 
-# brew bundle で opam がインストールされているか確認
-# ドライラン時は opam が存在しない可能性があるため、チェックを適切に分岐
 if [ "$SKIP_METAOCAML_SETUP" = "1" ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
         echo "[DRY-RUN] SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップ予定です。"
     else
         echo "SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップします。"
     fi
-elif [ "$DRY_RUN" -eq 0 ] && command -v opam &> /dev/null; then
-    # ~/.opam フォルダがない場合のみ（初回のみ）実行する
-    if [ ! -d "$HOME/.opam" ]; then
-        echo "opam を初期化し、MetaOCaml (5.3.0+BER) を構築します..."
-        run_and_log "opam init --disable-sandboxing --reinit -y" || { echo "opam init が失敗しました" >&2; exit 1; }
-        run_and_log "opam switch create metaocaml 5.3.0+BER -y" || { echo "opam switch の作成に失敗しました" >&2; exit 1; }
+elif command -v opam &> /dev/null; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "[DRY-RUN] opam コマンドが見つかったため追加セットアップをスキップします。"
     else
-        echo "opam はすでにセットアップされています。"
+        echo "opam コマンドが見つかったため追加セットアップをスキップします。"
     fi
 elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] opam の初期化（存在確認後）"
-    echo "[DRY-RUN] opam init --disable-sandboxing --reinit -y"
-    echo "[DRY-RUN] opam switch create metaocaml 5.3.0+BER -y"
+    echo "[DRY-RUN] opam コマンドが見つからない場合は Brewfile / Homebrew の状態を確認してください。"
+else
+    echo "opam が見つかりません。brew bundle で opam がインストールされているか確認してください。" >&2
 fi
 
 # mise は brew bundle 後に存在するはずなのでここで trust と install を行う
@@ -426,24 +421,30 @@ if [ "$SKIP_MISE_INSTALL" = "1" ]; then
     echo "SKIP_MISE_INSTALL=1 のため mise trust と mise install をスキップします。"
   fi
 elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
-  echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
+  echo "mise が見つかりました。設定を信頼し、ツールの不足を確認します..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
     if ! run_and_log "mise trust \"$DOTFILES_DIR/.config/mise/config.toml\""; then
       echo "mise trust に失敗しました" >&2
       exit 1
     fi
+
+    if MISE_TERMINAL_PROGRESS=false mise install --dry-run-code --jobs=1; then
+      echo "mise のツールは既にインストールされています。"
+    else
+      echo "mise のツールに不足があります。インストールします..."
+      if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
+        echo "mise install に失敗しました" >&2
+        exit 1
+      fi
+    fi
   else
     echo "mise 設定ファイルが見つかりません: $DOTFILES_DIR/.config/mise/config.toml" >&2
   fi
-
-  if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
-    echo "mise install に失敗しました" >&2
-    exit 1
-  fi
 elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] mise の信頼設定とツールインストール"
+    echo "[DRY-RUN] mise の信頼設定とツール不足確認"
     echo "[DRY-RUN] mise trust $DOTFILES_DIR/.config/mise/config.toml"
-    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
+    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --dry-run-code --jobs=1"
+    echo "[DRY-RUN] 不足がある場合のみ MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
 else
   echo "mise が見つかりません。brew bundle で mise がインストールされているか確認してください。" >&2
 fi
