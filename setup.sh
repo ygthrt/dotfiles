@@ -52,22 +52,118 @@ fi
 
 # backup utility
 BACKUP_DIR="$HOME/.dotfiles-backup"
-backup_if_needed() {
-  target="$1"
-  if [ -e "$target" ] || [ -L "$target" ]; then
-    if [ "$DRY_RUN" -eq 1 ]; then
-      # ドライラン時は警告を表示
-      echo "[DRY-RUN] 警告: 既に存在します ($target)"
-      ts_sample=$(date +%Y%m%d%H%M%S)
-      echo "[DRY-RUN] バックアップ予定: $target -> $BACKUP_DIR/$(basename "$target").pre-dotfiles-$ts_sample"
-    else
-      mkdir -p "$BACKUP_DIR"
-      ts=$(date +%Y%m%d%H%M%S)
-      bn=$(basename "$target")
-      execute_cmd "mv \"$target\" \"$BACKUP_DIR/${bn}.pre-dotfiles-${ts}\""
-      echo "バックアップ: $target -> $BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
-    fi
+canonical_path() {
+  local path="$1"
+  local path_dir
+  local path_base
+  local physical_dir
+
+  path_dir=$(dirname "$path")
+  path_base=$(basename "$path")
+  physical_dir=$(cd "$path_dir" 2>/dev/null && pwd -P) || return 1
+
+  printf '%s/%s\n' "$physical_dir" "$path_base"
+}
+
+same_symlink_target() {
+  local source="$1"
+  local target="$2"
+  local link_value
+  local link_candidate
+  local source_canonical
+  local candidate_canonical
+
+  [ -L "$target" ] || return 1
+
+  link_value=$(readlink "$target") || return 1
+  if [ "$link_value" = "$source" ]; then
+    return 0
   fi
+
+  case "$link_value" in
+    /*)
+      link_candidate="$link_value"
+      ;;
+    *)
+      link_candidate="$(dirname "$target")/$link_value"
+      ;;
+  esac
+
+  source_canonical=$(canonical_path "$source") || return 1
+  candidate_canonical=$(canonical_path "$link_candidate") || return 1
+
+  [ "$source_canonical" = "$candidate_canonical" ]
+}
+
+backup_path_for() {
+  local target="$1"
+  local timestamp="$2"
+  local relative_target
+
+  case "$target" in
+    "$HOME"/*)
+      relative_target="${target#"$HOME"/}"
+      ;;
+    *)
+      relative_target="${target#/}"
+      ;;
+  esac
+
+  printf '%s/%s.pre-dotfiles-%s\n' "$BACKUP_DIR" "$relative_target" "$timestamp"
+}
+
+unique_backup_path() {
+  local backup_path="$1"
+  local candidate="$backup_path"
+  local suffix=1
+
+  while [ -e "$candidate" ] || [ -L "$candidate" ]; do
+    candidate="${backup_path}.${suffix}"
+    suffix=$((suffix + 1))
+  done
+
+  printf '%s\n' "$candidate"
+}
+
+backup_existing_target() {
+  local target="$1"
+  local timestamp
+  local backup_path
+  local backup_dir
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    backup_path=$(unique_backup_path "$(backup_path_for "$target" "<timestamp>")")
+    echo "[DRY-RUN] 既存の設定をバックアップ予定: $target -> $backup_path"
+    return 0
+  fi
+
+  timestamp=$(date +%Y%m%d%H%M%S)
+  backup_path=$(unique_backup_path "$(backup_path_for "$target" "$timestamp")")
+  backup_dir=$(dirname "$backup_path")
+
+  execute_cmd "mkdir -p \"$backup_dir\""
+  execute_cmd "mv \"$target\" \"$backup_path\""
+  echo "バックアップ: $target -> $backup_path"
+}
+
+link_dotfile() {
+  local source="$1"
+  local target="$2"
+
+  if same_symlink_target "$source" "$target"; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] スキップ: $target は既に $source へのシンボリックリンクです。"
+    else
+      echo "スキップ: $target は既に $source へのシンボリックリンクです。"
+    fi
+    return 0
+  fi
+
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup_existing_target "$target"
+  fi
+
+  execute_cmd "ln -snf \"$source\" \"$target\""
 }
 
 # dry-run helper for commands
@@ -185,41 +281,29 @@ trap 'cleanup_sudo_session' EXIT
 # 2. シンボリックリンクの作成
 # =========================================================
 echo "シンボリックリンクを作成しています..."
-# ln -snf で既存のファイルがあっても上書きしてリンクします
-backup_if_needed ~/.zshrc
-execute_cmd "ln -snf \"$DOTFILES_DIR/.zshrc\" ~/.zshrc"
+link_dotfile "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 
-backup_if_needed ~/.config/zsh/.zshrc
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/zsh/.zshrc\" ~/.config/zsh/.zshrc"
+link_dotfile "$DOTFILES_DIR/.config/zsh/.zshrc" "$HOME/.config/zsh/.zshrc"
 
 # hidden は機密情報用（gitignore済み）
-backup_if_needed ~/.config/zsh/hidden
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/zsh/hidden\" ~/.config/zsh/hidden"
+link_dotfile "$DOTFILES_DIR/.config/zsh/hidden" "$HOME/.config/zsh/hidden"
 
-backup_if_needed ~/.config/starship.toml
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/starship/starship.toml\" ~/.config/starship.toml"
+link_dotfile "$DOTFILES_DIR/.config/starship/starship.toml" "$HOME/.config/starship.toml"
 
-backup_if_needed ~/.config/ghostty/config
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/ghostty/config\" ~/.config/ghostty/config"
+link_dotfile "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
 
-backup_if_needed "${HOME}/Library/Application Support/Code/User/settings.json"
-execute_cmd "ln -snf \"$DOTFILES_DIR/vscode/settings.json\" \"${HOME}/Library/Application Support/Code/User/settings.json\""
+link_dotfile "$DOTFILES_DIR/vscode/settings.json" "$HOME/Library/Application Support/Code/User/settings.json"
 
-backup_if_needed "${HOME}/Library/Application Support/Code/User/keybindings.json"
-execute_cmd "ln -snf \"$DOTFILES_DIR/vscode/keybindings.json\" \"${HOME}/Library/Application Support/Code/User/keybindings.json\""
+link_dotfile "$DOTFILES_DIR/vscode/keybindings.json" "$HOME/Library/Application Support/Code/User/keybindings.json"
 
-backup_if_needed ~/.config/mise/config.toml
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/mise/config.toml\" ~/.config/mise/config.toml"
+link_dotfile "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/config.toml"
 # mise trust は mise が利用可能になってから実行する（brew bundle 後）
 
-backup_if_needed ~/.config/nvim
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
+link_dotfile "$DOTFILES_DIR/.config/nvim" "$HOME/.config/nvim"
 
-backup_if_needed ~/.copilot/copilot-instructions.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
+link_dotfile "$DOTFILES_DIR/.copilot/copilot-instructions.md" "$HOME/.copilot/copilot-instructions.md"
 
-backup_if_needed ~/.codex/AGENTS.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/.codex/AGENTS.md"
+link_dotfile "$DOTFILES_DIR/.config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
 # Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
 CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
