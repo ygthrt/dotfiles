@@ -80,15 +80,19 @@ run_cmd() {
   fi
 }
 
-# run command and append output to logfile; abort on failure
+# コマンドの出力を端末に表示しつつログファイルにも保存する
 run_and_log() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] $*"
+    printf '[DRY-RUN] %s\n' "$*"
     return 0
   fi
   echo "[RUN] $*" | tee -a "$LOGFILE"
-  eval "$@" >>"$LOGFILE" 2>&1
-  status=$?
+
+  set +e
+  eval "$@" 2>&1 | tee -a "$LOGFILE"
+  status=${PIPESTATUS[0]}
+  set -e
+
   if [ $status -ne 0 ]; then
     echo "コマンドが失敗しました: $* (exit $status)" | tee -a "$LOGFILE" >&2
     return $status
@@ -213,14 +217,14 @@ echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
-  echo "[DRY-RUN] brew bundle (will not run)"
+  echo "[DRY-RUN] brew bundle --verbose (will not run)"
 else
   if [ "$CI" = "true" ]; then
     # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
-    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
-    run_and_log "brew bundle" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   fi
 fi
 
@@ -262,7 +266,7 @@ if [ "$SKIP_MISE_INSTALL" = "1" ]; then
 elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
   echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
-    if ! mise trust "$DOTFILES_DIR/.config/mise/config.toml"; then
+    if ! run_and_log "mise trust \"$DOTFILES_DIR/.config/mise/config.toml\""; then
       echo "mise trust に失敗しました" >&2
       exit 1
     fi
@@ -270,14 +274,14 @@ elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
     echo "mise 設定ファイルが見つかりません: $DOTFILES_DIR/.config/mise/config.toml" >&2
   fi
 
-  if ! mise install; then
+  if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
     echo "mise install に失敗しました" >&2
     exit 1
   fi
 elif [ "$DRY_RUN" -eq 1 ]; then
     echo "[DRY-RUN] mise の信頼設定とツールインストール"
     echo "[DRY-RUN] mise trust $DOTFILES_DIR/.config/mise/config.toml"
-    echo "[DRY-RUN] mise install"
+    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
 else
   echo "mise が見つかりません。brew bundle で mise がインストールされているか確認してください。" >&2
 fi
