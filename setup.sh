@@ -100,6 +100,74 @@ run_and_log() {
   return 0
 }
 
+SUDO_KEEPALIVE_PID=""
+SUDO_SESSION_CREATED=0
+
+# sudoers は変更せず、セットアップ中だけ sudo timestamp を維持する
+ensure_sudo_session() {
+  if [ "${SKIP_SUDO_KEEPALIVE:-}" = "1" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] SKIP_SUDO_KEEPALIVE=1 のため sudo keep-alive をスキップします。"
+    else
+      echo "SKIP_SUDO_KEEPALIVE=1 のため sudo keep-alive をスキップします。"
+    fi
+    return 0
+  fi
+
+  if [ "$CI" = "true" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] CI 環境のため sudo keep-alive をスキップします。"
+    else
+      echo "CI 環境のため sudo keep-alive をスキップします。"
+    fi
+    return 0
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] sudo 認証の事前確認と keep-alive"
+    return 0
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo "sudo が見つからないため sudo keep-alive をスキップします。"
+    return 0
+  fi
+
+  if [ ! -t 0 ]; then
+    echo "非対話端末のため sudo keep-alive をスキップします。"
+    return 0
+  fi
+
+  if sudo -n -v 2>/dev/null; then
+    echo "既存の sudo 認証を検出しました。セットアップ中だけ維持します。"
+  else
+    echo "Homebrew / cask のインストール中に管理者権限が必要になる場合があります。"
+    echo "パスワード再入力を減らすため、ここで sudo 認証を確認します。"
+    if ! sudo -v; then
+      echo "sudo 認証に失敗しました。" >&2
+      return 1
+    fi
+    SUDO_SESSION_CREATED=1
+  fi
+
+  while true; do
+    sudo -n -v 2>/dev/null || exit
+    sleep 60
+  done &
+  SUDO_KEEPALIVE_PID=$!
+}
+
+cleanup_sudo_session() {
+  if [ -n "${SUDO_KEEPALIVE_PID:-}" ]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    wait "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+  fi
+
+  if [ "${SUDO_SESSION_CREATED:-0}" -eq 1 ]; then
+    sudo -k 2>/dev/null || true
+  fi
+}
+
 on_error() {
   rc=$?
   echo "エラー発生: exit $rc" >&2
@@ -111,6 +179,7 @@ on_error() {
 }
 
 trap 'on_error' ERR
+trap 'cleanup_sudo_session' EXIT
 
 # =========================================================
 # 2. シンボリックリンクの作成
@@ -190,6 +259,7 @@ fi
 
 if ! command -v brew &> /dev/null; then
     echo "Homebrew が見つからないため、インストールします..."
+    ensure_sudo_session
     execute_cmd "/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
     
     # インストール後、適切な shellenv を ~/.zprofile に追記（重複チェックあり）
@@ -217,6 +287,8 @@ echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
+  echo "[DRY-RUN] brew bundle check --verbose"
+  echo "[DRY-RUN] 必要な依存関係がある場合のみ sudo 認証の事前確認と keep-alive"
   echo "[DRY-RUN] brew bundle --verbose (will not run)"
 else
   if [ "$CI" = "true" ]; then
@@ -224,6 +296,12 @@ else
     run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
+    if brew bundle check --verbose; then
+      echo "Brewfile の依存関係は既に満たされています。"
+    else
+      echo "Brewfile の依存関係に不足があります。インストール前に sudo 認証を確認します。"
+      ensure_sudo_session
+    fi
     run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   fi
 fi
