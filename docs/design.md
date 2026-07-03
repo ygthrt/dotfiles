@@ -34,6 +34,10 @@
 
 システム状態を変更するコマンドは、原則として `execute_cmd`、`run_and_log`、`run_cmd` などのドライラン対応ラッパーを経由します。
 
+`run_and_log` は実行中の進捗をターミナルに表示しながら、同じ出力をログファイルにも保存します。
+
+sudo 認証は必要に応じてセットアップ中だけ keep-alive します。`sudoers` や `NOPASSWD` などの恒久的な権限変更は行いません。
+
 対象例:
 
 - `mkdir`
@@ -88,9 +92,9 @@ Codex の rules は `.config/codex/rules/default.rules` に最小 seed を置き
 
 sandbox 内コマンドのネットワークは、rules ではなく `sandbox_workspace_write.network_access` と `features.network_proxy` で制御します。初期 seed では OpenAI / Codex 公式サイトに必要なドメインだけを allow します。
 
-汎用の AI エージェント向け指示は `.config/codex/AGENTS.md` に置き、`setup.sh` で `~/AGENTS.md` へシンボリックリンクします。
+汎用の AI エージェント向け指示は `.config/codex/AGENTS.md` に置き、`setup.sh` で `~/.codex/AGENTS.md` へシンボリックリンクします。
 
-リポジトリ直下の `AGENTS.md` は、この dotfiles リポジトリ固有の指示です。ホームの `~/AGENTS.md` は、特定リポジトリに固有の指示がない場合に使う汎用指示として扱います。
+リポジトリ直下の `AGENTS.md` は、この dotfiles リポジトリ固有の指示です。`~/.codex/AGENTS.md` は、Codex が参照する汎用指示として扱います。
 
 管理しないもの:
 

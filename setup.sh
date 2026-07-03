@@ -22,8 +22,8 @@ fi
 # DRY_RUN=1 の場合、コマンドを表示するだけで実行しない
 execute_cmd() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    # 環境変数を展開してコマンドを表示
-    echo "[DRY-RUN] $(eval echo "$*")"
+    # dry-run 表示ではコマンド置換を評価しない。特に Homebrew install の curl を実行させないため。
+    printf '[DRY-RUN] %s\n' "$*"
     return 0
   else
     eval "$@"
@@ -80,20 +80,92 @@ run_cmd() {
   fi
 }
 
-# run command and append output to logfile; abort on failure
+# コマンドの出力を端末に表示しつつログファイルにも保存する
 run_and_log() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] $*"
+    printf '[DRY-RUN] %s\n' "$*"
     return 0
   fi
   echo "[RUN] $*" | tee -a "$LOGFILE"
-  eval "$@" >>"$LOGFILE" 2>&1
-  status=$?
+
+  set +e
+  eval "$@" 2>&1 | tee -a "$LOGFILE"
+  status=${PIPESTATUS[0]}
+  set -e
+
   if [ $status -ne 0 ]; then
     echo "コマンドが失敗しました: $* (exit $status)" | tee -a "$LOGFILE" >&2
     return $status
   fi
   return 0
+}
+
+SUDO_KEEPALIVE_PID=""
+SUDO_SESSION_CREATED=0
+
+# sudoers は変更せず、セットアップ中だけ sudo timestamp を維持する
+ensure_sudo_session() {
+  if [ "${SKIP_SUDO_KEEPALIVE:-}" = "1" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] SKIP_SUDO_KEEPALIVE=1 のため sudo keep-alive をスキップします。"
+    else
+      echo "SKIP_SUDO_KEEPALIVE=1 のため sudo keep-alive をスキップします。"
+    fi
+    return 0
+  fi
+
+  if [ "$CI" = "true" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] CI 環境のため sudo keep-alive をスキップします。"
+    else
+      echo "CI 環境のため sudo keep-alive をスキップします。"
+    fi
+    return 0
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] sudo 認証の事前確認と keep-alive"
+    return 0
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo "sudo が見つからないため sudo keep-alive をスキップします。"
+    return 0
+  fi
+
+  if [ ! -t 0 ]; then
+    echo "非対話端末のため sudo keep-alive をスキップします。"
+    return 0
+  fi
+
+  if sudo -n -v 2>/dev/null; then
+    echo "既存の sudo 認証を検出しました。セットアップ中だけ維持します。"
+  else
+    echo "Homebrew / cask のインストール中に管理者権限が必要になる場合があります。"
+    echo "パスワード再入力を減らすため、ここで sudo 認証を確認します。"
+    if ! sudo -v; then
+      echo "sudo 認証に失敗しました。" >&2
+      return 1
+    fi
+    SUDO_SESSION_CREATED=1
+  fi
+
+  while true; do
+    sudo -n -v 2>/dev/null || exit
+    sleep 60
+  done &
+  SUDO_KEEPALIVE_PID=$!
+}
+
+cleanup_sudo_session() {
+  if [ -n "${SUDO_KEEPALIVE_PID:-}" ]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    wait "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+  fi
+
+  if [ "${SUDO_SESSION_CREATED:-0}" -eq 1 ]; then
+    sudo -k 2>/dev/null || true
+  fi
 }
 
 on_error() {
@@ -107,6 +179,7 @@ on_error() {
 }
 
 trap 'on_error' ERR
+trap 'cleanup_sudo_session' EXIT
 
 # =========================================================
 # 2. シンボリックリンクの作成
@@ -145,8 +218,8 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
 backup_if_needed ~/.copilot/copilot-instructions.md
 execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
 
-backup_if_needed ~/AGENTS.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/AGENTS.md"
+backup_if_needed ~/.codex/AGENTS.md
+execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/.codex/AGENTS.md"
 
 # Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
 CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
@@ -186,6 +259,7 @@ fi
 
 if ! command -v brew &> /dev/null; then
     echo "Homebrew が見つからないため、インストールします..."
+    ensure_sudo_session
     execute_cmd "/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
     
     # インストール後、適切な shellenv を ~/.zprofile に追記（重複チェックあり）
@@ -213,14 +287,22 @@ echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
-  echo "[DRY-RUN] brew bundle (will not run)"
+  echo "[DRY-RUN] brew bundle check --verbose"
+  echo "[DRY-RUN] 必要な依存関係がある場合のみ sudo 認証の事前確認と keep-alive"
+  echo "[DRY-RUN] brew bundle --verbose (will not run)"
 else
   if [ "$CI" = "true" ]; then
     # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
-    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
-    run_and_log "brew bundle" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    if brew bundle check --verbose; then
+      echo "Brewfile の依存関係は既に満たされています。"
+    else
+      echo "Brewfile の依存関係に不足があります。インストール前に sudo 認証を確認します。"
+      ensure_sudo_session
+    fi
+    run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   fi
 fi
 
@@ -262,7 +344,7 @@ if [ "$SKIP_MISE_INSTALL" = "1" ]; then
 elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
   echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
-    if ! mise trust "$DOTFILES_DIR/.config/mise/config.toml"; then
+    if ! run_and_log "mise trust \"$DOTFILES_DIR/.config/mise/config.toml\""; then
       echo "mise trust に失敗しました" >&2
       exit 1
     fi
@@ -270,14 +352,14 @@ elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
     echo "mise 設定ファイルが見つかりません: $DOTFILES_DIR/.config/mise/config.toml" >&2
   fi
 
-  if ! mise install; then
+  if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
     echo "mise install に失敗しました" >&2
     exit 1
   fi
 elif [ "$DRY_RUN" -eq 1 ]; then
     echo "[DRY-RUN] mise の信頼設定とツールインストール"
     echo "[DRY-RUN] mise trust $DOTFILES_DIR/.config/mise/config.toml"
-    echo "[DRY-RUN] mise install"
+    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
 else
   echo "mise が見つかりません。brew bundle で mise がインストールされているか確認してください。" >&2
 fi
