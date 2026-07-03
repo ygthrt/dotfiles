@@ -88,9 +88,9 @@ Codex の rules は `.config/codex/rules/default.rules` に最小 seed を置き
 
 sandbox 内コマンドのネットワークは、rules ではなく `sandbox_workspace_write.network_access` と `features.network_proxy` で制御します。初期 seed では OpenAI / Codex 公式サイトに必要なドメインだけを allow します。
 
-汎用の AI エージェント向け指示は `.config/codex/AGENTS.md` に置き、`setup.sh` で `~/AGENTS.md` へシンボリックリンクします。
+汎用の AI エージェント向け指示は `.config/codex/AGENTS.md` に置き、`setup.sh` で `~/.codex/AGENTS.md` へシンボリックリンクします。
 
-リポジトリ直下の `AGENTS.md` は、この dotfiles リポジトリ固有の指示です。ホームの `~/AGENTS.md` は、特定リポジトリに固有の指示がない場合に使う汎用指示として扱います。
+リポジトリ直下の `AGENTS.md` は、この dotfiles リポジトリ固有の指示です。`~/.codex/AGENTS.md` は、Codex が参照する汎用指示として扱います。
 
 管理しないもの:
 

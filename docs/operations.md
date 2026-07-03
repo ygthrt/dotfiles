@@ -51,9 +51,9 @@ git grep -n -I -E "(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKI
 
 ## AI エージェント指示の更新
 
-汎用の AI エージェント向け指示を変えたい場合は、`.config/codex/AGENTS.md` を編集します。`setup.sh` はこのファイルを `~/AGENTS.md` にシンボリックリンクします。
+汎用の AI エージェント向け指示を変えたい場合は、`.config/codex/AGENTS.md` を編集します。`setup.sh` はこのファイルを `~/.codex/AGENTS.md` にシンボリックリンクします。
 
-リポジトリ固有の指示は、そのリポジトリの `AGENTS.md` に書きます。ホームの `~/AGENTS.md` には、どのリポジトリでも使える基本方針だけを置きます。
+リポジトリ固有の指示は、そのリポジトリの `AGENTS.md` に書きます。`~/.codex/AGENTS.md` には、Codex で使う基本方針だけを置きます。
 
 ## Codex 設定 seed の更新
 

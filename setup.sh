@@ -22,8 +22,8 @@ fi
 # DRY_RUN=1 の場合、コマンドを表示するだけで実行しない
 execute_cmd() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    # 環境変数を展開してコマンドを表示
-    echo "[DRY-RUN] $(eval echo "$*")"
+    # dry-run 表示ではコマンド置換を評価しない。特に Homebrew install の curl を実行させないため。
+    printf '[DRY-RUN] %s\n' "$*"
     return 0
   else
     eval "$@"
@@ -145,8 +145,8 @@ execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
 backup_if_needed ~/.copilot/copilot-instructions.md
 execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
 
-backup_if_needed ~/AGENTS.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/AGENTS.md"
+backup_if_needed ~/.codex/AGENTS.md
+execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/.codex/AGENTS.md"
 
 # Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
 CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
