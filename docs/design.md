@@ -109,7 +109,7 @@ Homebrew は macOS アプリ、CLI ツール、Cask、必要に応じて VS Code
 
 mise は Node.js、Python、Go、Java などの言語ランタイムや開発ツールを管理します。
 
-opam は OCaml 環境を管理します。
+opam は OCaml 環境を管理します。`setup.sh` では opam コマンドの有無だけを確認し、switch 作成などの詳細な OCaml 初期化は必要時に個別に見直します。
 
 Homebrew で入れるべきものと mise で入れるべきものを混在させないようにします。OCaml 関連の変更では、opam と Homebrew / mise の責務が重ならないようにします。
 

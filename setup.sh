@@ -52,22 +52,118 @@ fi
 
 # backup utility
 BACKUP_DIR="$HOME/.dotfiles-backup"
-backup_if_needed() {
-  target="$1"
-  if [ -e "$target" ] || [ -L "$target" ]; then
-    if [ "$DRY_RUN" -eq 1 ]; then
-      # ドライラン時は警告を表示
-      echo "[DRY-RUN] 警告: 既に存在します ($target)"
-      ts_sample=$(date +%Y%m%d%H%M%S)
-      echo "[DRY-RUN] バックアップ予定: $target -> $BACKUP_DIR/$(basename "$target").pre-dotfiles-$ts_sample"
-    else
-      mkdir -p "$BACKUP_DIR"
-      ts=$(date +%Y%m%d%H%M%S)
-      bn=$(basename "$target")
-      execute_cmd "mv \"$target\" \"$BACKUP_DIR/${bn}.pre-dotfiles-${ts}\""
-      echo "バックアップ: $target -> $BACKUP_DIR/${bn}.pre-dotfiles-${ts}"
-    fi
+canonical_path() {
+  local path="$1"
+  local path_dir
+  local path_base
+  local physical_dir
+
+  path_dir=$(dirname "$path")
+  path_base=$(basename "$path")
+  physical_dir=$(cd "$path_dir" 2>/dev/null && pwd -P) || return 1
+
+  printf '%s/%s\n' "$physical_dir" "$path_base"
+}
+
+same_symlink_target() {
+  local source="$1"
+  local target="$2"
+  local link_value
+  local link_candidate
+  local source_canonical
+  local candidate_canonical
+
+  [ -L "$target" ] || return 1
+
+  link_value=$(readlink "$target") || return 1
+  if [ "$link_value" = "$source" ]; then
+    return 0
   fi
+
+  case "$link_value" in
+    /*)
+      link_candidate="$link_value"
+      ;;
+    *)
+      link_candidate="$(dirname "$target")/$link_value"
+      ;;
+  esac
+
+  source_canonical=$(canonical_path "$source") || return 1
+  candidate_canonical=$(canonical_path "$link_candidate") || return 1
+
+  [ "$source_canonical" = "$candidate_canonical" ]
+}
+
+backup_path_for() {
+  local target="$1"
+  local timestamp="$2"
+  local relative_target
+
+  case "$target" in
+    "$HOME"/*)
+      relative_target="${target#"$HOME"/}"
+      ;;
+    *)
+      relative_target="${target#/}"
+      ;;
+  esac
+
+  printf '%s/%s.pre-dotfiles-%s\n' "$BACKUP_DIR" "$relative_target" "$timestamp"
+}
+
+unique_backup_path() {
+  local backup_path="$1"
+  local candidate="$backup_path"
+  local suffix=1
+
+  while [ -e "$candidate" ] || [ -L "$candidate" ]; do
+    candidate="${backup_path}.${suffix}"
+    suffix=$((suffix + 1))
+  done
+
+  printf '%s\n' "$candidate"
+}
+
+backup_existing_target() {
+  local target="$1"
+  local timestamp
+  local backup_path
+  local backup_dir
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    backup_path=$(unique_backup_path "$(backup_path_for "$target" "<timestamp>")")
+    echo "[DRY-RUN] 既存の設定をバックアップ予定: $target -> $backup_path"
+    return 0
+  fi
+
+  timestamp=$(date +%Y%m%d%H%M%S)
+  backup_path=$(unique_backup_path "$(backup_path_for "$target" "$timestamp")")
+  backup_dir=$(dirname "$backup_path")
+
+  execute_cmd "mkdir -p \"$backup_dir\""
+  execute_cmd "mv \"$target\" \"$backup_path\""
+  echo "バックアップ: $target -> $backup_path"
+}
+
+link_dotfile() {
+  local source="$1"
+  local target="$2"
+
+  if same_symlink_target "$source" "$target"; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[DRY-RUN] スキップ: $target は既に $source へのシンボリックリンクです。"
+    else
+      echo "スキップ: $target は既に $source へのシンボリックリンクです。"
+    fi
+    return 0
+  fi
+
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup_existing_target "$target"
+  fi
+
+  execute_cmd "ln -snf \"$source\" \"$target\""
 }
 
 # dry-run helper for commands
@@ -185,41 +281,29 @@ trap 'cleanup_sudo_session' EXIT
 # 2. シンボリックリンクの作成
 # =========================================================
 echo "シンボリックリンクを作成しています..."
-# ln -snf で既存のファイルがあっても上書きしてリンクします
-backup_if_needed ~/.zshrc
-execute_cmd "ln -snf \"$DOTFILES_DIR/.zshrc\" ~/.zshrc"
+link_dotfile "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 
-backup_if_needed ~/.config/zsh/.zshrc
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/zsh/.zshrc\" ~/.config/zsh/.zshrc"
+link_dotfile "$DOTFILES_DIR/.config/zsh/.zshrc" "$HOME/.config/zsh/.zshrc"
 
 # hidden は機密情報用（gitignore済み）
-backup_if_needed ~/.config/zsh/hidden
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/zsh/hidden\" ~/.config/zsh/hidden"
+link_dotfile "$DOTFILES_DIR/.config/zsh/hidden" "$HOME/.config/zsh/hidden"
 
-backup_if_needed ~/.config/starship.toml
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/starship/starship.toml\" ~/.config/starship.toml"
+link_dotfile "$DOTFILES_DIR/.config/starship/starship.toml" "$HOME/.config/starship.toml"
 
-backup_if_needed ~/.config/ghostty/config
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/ghostty/config\" ~/.config/ghostty/config"
+link_dotfile "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
 
-backup_if_needed "${HOME}/Library/Application Support/Code/User/settings.json"
-execute_cmd "ln -snf \"$DOTFILES_DIR/vscode/settings.json\" \"${HOME}/Library/Application Support/Code/User/settings.json\""
+link_dotfile "$DOTFILES_DIR/vscode/settings.json" "$HOME/Library/Application Support/Code/User/settings.json"
 
-backup_if_needed "${HOME}/Library/Application Support/Code/User/keybindings.json"
-execute_cmd "ln -snf \"$DOTFILES_DIR/vscode/keybindings.json\" \"${HOME}/Library/Application Support/Code/User/keybindings.json\""
+link_dotfile "$DOTFILES_DIR/vscode/keybindings.json" "$HOME/Library/Application Support/Code/User/keybindings.json"
 
-backup_if_needed ~/.config/mise/config.toml
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/mise/config.toml\" ~/.config/mise/config.toml"
+link_dotfile "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/config.toml"
 # mise trust は mise が利用可能になってから実行する（brew bundle 後）
 
-backup_if_needed ~/.config/nvim
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/nvim\" ~/.config/nvim"
+link_dotfile "$DOTFILES_DIR/.config/nvim" "$HOME/.config/nvim"
 
-backup_if_needed ~/.copilot/copilot-instructions.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.copilot/copilot-instructions.md\" ~/.copilot/copilot-instructions.md"
+link_dotfile "$DOTFILES_DIR/.copilot/copilot-instructions.md" "$HOME/.copilot/copilot-instructions.md"
 
-backup_if_needed ~/.codex/AGENTS.md
-execute_cmd "ln -snf \"$DOTFILES_DIR/.config/codex/AGENTS.md\" ~/.codex/AGENTS.md"
+link_dotfile "$DOTFILES_DIR/.config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
 # Codex config はローカル状態が混ざりやすいため、初回だけ seed を配置する
 CODEX_CONFIG_TARGET="$HOME/.codex/config.toml"
@@ -287,51 +371,46 @@ echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
-  echo "[DRY-RUN] brew bundle check --verbose"
+  echo "[DRY-RUN] HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose"
   echo "[DRY-RUN] 必要な依存関係がある場合のみ sudo 認証の事前確認と keep-alive"
-  echo "[DRY-RUN] brew bundle --verbose (will not run)"
+  echo "[DRY-RUN] 不足がある場合のみ brew bundle --verbose"
 else
   if [ "$CI" = "true" ]; then
     # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
     run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
     # ローカルのMacでは通常通りすべてインストール
-    if brew bundle check --verbose; then
+    if HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose; then
       echo "Brewfile の依存関係は既に満たされています。"
     else
       echo "Brewfile の依存関係に不足があります。インストール前に sudo 認証を確認します。"
       ensure_sudo_session
+      run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
     fi
-    run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   fi
 fi
 
 # =========================================================
-# 5. opam (OCaml / MetaOCaml) の自動セットアップ
+# 5. opam (OCaml) の状態確認
 # =========================================================
 echo "opam の状態を確認しています..."
 
-# brew bundle で opam がインストールされているか確認
-# ドライラン時は opam が存在しない可能性があるため、チェックを適切に分岐
 if [ "$SKIP_METAOCAML_SETUP" = "1" ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
         echo "[DRY-RUN] SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップ予定です。"
     else
         echo "SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップします。"
     fi
-elif [ "$DRY_RUN" -eq 0 ] && command -v opam &> /dev/null; then
-    # ~/.opam フォルダがない場合のみ（初回のみ）実行する
-    if [ ! -d "$HOME/.opam" ]; then
-        echo "opam を初期化し、MetaOCaml (5.3.0+BER) を構築します..."
-        run_and_log "opam init --disable-sandboxing --reinit -y" || { echo "opam init が失敗しました" >&2; exit 1; }
-        run_and_log "opam switch create metaocaml 5.3.0+BER -y" || { echo "opam switch の作成に失敗しました" >&2; exit 1; }
+elif command -v opam &> /dev/null; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "[DRY-RUN] opam コマンドが見つかったため追加セットアップをスキップします。"
     else
-        echo "opam はすでにセットアップされています。"
+        echo "opam コマンドが見つかったため追加セットアップをスキップします。"
     fi
 elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] opam の初期化（存在確認後）"
-    echo "[DRY-RUN] opam init --disable-sandboxing --reinit -y"
-    echo "[DRY-RUN] opam switch create metaocaml 5.3.0+BER -y"
+    echo "[DRY-RUN] opam コマンドが見つからない場合は Brewfile / Homebrew の状態を確認してください。"
+else
+    echo "opam が見つかりません。brew bundle で opam がインストールされているか確認してください。" >&2
 fi
 
 # mise は brew bundle 後に存在するはずなのでここで trust と install を行う
@@ -342,24 +421,30 @@ if [ "$SKIP_MISE_INSTALL" = "1" ]; then
     echo "SKIP_MISE_INSTALL=1 のため mise trust と mise install をスキップします。"
   fi
 elif [ "$DRY_RUN" -eq 0 ] && command -v mise &> /dev/null; then
-  echo "mise が見つかりました。設定を信頼し、ツールをインストールします..."
+  echo "mise が見つかりました。設定を信頼し、ツールの不足を確認します..."
   if [ -f "$DOTFILES_DIR/.config/mise/config.toml" ]; then
     if ! run_and_log "mise trust \"$DOTFILES_DIR/.config/mise/config.toml\""; then
       echo "mise trust に失敗しました" >&2
       exit 1
     fi
+
+    if MISE_TERMINAL_PROGRESS=false mise install --dry-run-code --jobs=1; then
+      echo "mise のツールは既にインストールされています。"
+    else
+      echo "mise のツールに不足があります。インストールします..."
+      if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
+        echo "mise install に失敗しました" >&2
+        exit 1
+      fi
+    fi
   else
     echo "mise 設定ファイルが見つかりません: $DOTFILES_DIR/.config/mise/config.toml" >&2
   fi
-
-  if ! run_and_log "MISE_TERMINAL_PROGRESS=false mise install --jobs=1"; then
-    echo "mise install に失敗しました" >&2
-    exit 1
-  fi
 elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] mise の信頼設定とツールインストール"
+    echo "[DRY-RUN] mise の信頼設定とツール不足確認"
     echo "[DRY-RUN] mise trust $DOTFILES_DIR/.config/mise/config.toml"
-    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
+    echo "[DRY-RUN] MISE_TERMINAL_PROGRESS=false mise install --dry-run-code --jobs=1"
+    echo "[DRY-RUN] 不足がある場合のみ MISE_TERMINAL_PROGRESS=false mise install --jobs=1"
 else
   echo "mise が見つかりません。brew bundle で mise がインストールされているか確認してください。" >&2
 fi
