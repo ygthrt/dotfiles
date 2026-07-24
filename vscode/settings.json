@@ -11,6 +11,22 @@
     "gitlens.ai.vscode.model": "copilotcli:claude-haiku-4.5",
 
     // ==========================================
+    // OCaml Platform の設定
+    // ==========================================
+    // 通常開発は default switch を使い、MetaOCaml は shell の専用関数からだけ起動する
+    "ocaml.sandbox": {
+        "kind": "opam",
+        "switch": "default"
+    },
+    "ocaml.dune.autoDetect": true,
+    "ocaml.repl.useUtop": true,
+    "ocaml.trace.server": "off",
+    "[ocaml]": {
+        // .ocamlformat のあるプロジェクトで必要に応じて個別に有効化する
+        "editor.formatOnSave": false
+    },
+
+    // ==========================================
     // ターミナルの文字化け対策
     // ==========================================
     // "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'Menlo', 'Monaco', monospace",

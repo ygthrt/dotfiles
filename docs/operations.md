@@ -20,6 +20,69 @@ alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/s
 
 通常の `brew bundle dump` をそのまま実行すると、mise や npm など別の仕組みで管理しているツールが `Brewfile` に混入することがあります。`brew-dump` は Homebrew 用の PATH に絞ってから `Brewfile` を更新します。
 
+## OCaml / MetaOCaml
+
+Homebrew は opam 本体と VS Code の OCaml Platform 拡張を管理し、OCaml の compiler と開発ツールは opam が管理します。
+
+`setup.sh` は次の2つの switch を使います。
+
+```text
+default
+  通常 OCaml
+  dune / ocaml-lsp-server / utop / ocamlformat
+
+metaocaml
+  ocaml-variants.5.3.0+BER
+```
+
+既存の `default` switch の compiler は自動で変更しません。`default` が存在しない新規環境では、opam が選ぶ標準 compiler で作成します。
+
+MetaOCaml は通常の shell 環境を切り替えず、専用関数から起動します。
+
+```bash
+# REPL またはスクリプト実行
+metaocaml
+metaocaml example.ml
+
+# bytecode / native compiler
+metaocamlc -o example.byte example.ml
+metaocamlopt -o example.native example.ml
+```
+
+これらは内部で `opam exec --switch=metaocaml -- ...` を使うため、終了後も親 shell の switch は `default` のままです。
+
+通常 OCaml プロジェクトでは Dune の watch mode を使うと、LSP が参照するビルド情報を更新できます。
+
+```bash
+dune build --watch --terminal-persistence=clear-on-rebuild
+```
+
+`ocamlformat` は導入しますが、グローバルの保存時フォーマットは無効です。プロジェクトルートに `.ocamlformat` を用意し、必要なプロジェクトだけ workspace 設定で `editor.formatOnSave` を有効にします。MetaOCaml 固有構文は通常の OCaml LSP や ocamlformat でエラーになる可能性があります。
+
+現在の通常環境を確認します。
+
+```bash
+opam switch show
+opam exec --switch=default -- ocamlc -version
+opam exec --switch=default -- dune --version
+opam exec --switch=default -- ocamllsp --version
+opam exec --switch=default -- utop -version
+opam exec --switch=default -- ocamlformat --version
+```
+
+compiler やパッケージを更新する場合は、`setup.sh` に自動 upgrade を追加せず、先に opam の解決内容を確認します。
+
+```bash
+opam update
+opam upgrade --switch=default --dry-run
+```
+
+CI や一時的な確認で OCaml 構築を省略する場合は、次のように実行します。
+
+```bash
+SKIP_OCAML_SETUP=1 ./setup.sh
+```
+
 ## hidden 設定
 
 API キー、パスワード、特定のマシンでだけ使う設定は、Git 管理対象の設定ファイルには書きません。

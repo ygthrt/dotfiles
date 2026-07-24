@@ -39,7 +39,7 @@ jobs:
         # CIではbrew bundleを検証しつつ、重い言語環境構築だけをスキップする
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SKIP_METAOCAML_SETUP: "1"
+          SKIP_OCAML_SETUP: "1"
           SKIP_MISE_INSTALL: "1"
         run: |
           # 実行権限を付与
