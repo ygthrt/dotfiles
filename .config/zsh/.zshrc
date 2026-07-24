@@ -70,6 +70,19 @@ fi
 # ==========================================
 [[ ! -r ~/.opam/opam-init/init.zsh ]] || source ~/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
 
+# 通常の shell 環境を切り替えず、既存の MetaOCaml switch 内だけで実行する。
+metaocaml() {
+  opam exec --switch=metaocaml -- metaocaml "$@"
+}
+
+metaocamlc() {
+  opam exec --switch=metaocaml -- metaocamlc "$@"
+}
+
+metaocamlopt() {
+  opam exec --switch=metaocaml -- metaocamlopt "$@"
+}
+
 # ==========================================
 # mise (環境構築・バージョン管理)
 # ==========================================

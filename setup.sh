@@ -391,26 +391,91 @@ else
 fi
 
 # =========================================================
-# 5. opam (OCaml) の状態確認
+# 5. opam (OCaml) のセットアップ
 # =========================================================
-echo "opam の状態を確認しています..."
+echo "OCaml / opam の状態を確認しています..."
 
-if [ "$SKIP_METAOCAML_SETUP" = "1" ]; then
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo "[DRY-RUN] SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップ予定です。"
-    else
-        echo "SKIP_METAOCAML_SETUP=1 のため MetaOCaml setup をスキップします。"
-    fi
-elif command -v opam &> /dev/null; then
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo "[DRY-RUN] opam コマンドが見つかったため追加セットアップをスキップします。"
-    else
-        echo "opam コマンドが見つかったため追加セットアップをスキップします。"
-    fi
-elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "[DRY-RUN] opam コマンドが見つからない場合は Brewfile / Homebrew の状態を確認してください。"
-else
+OCAML_SWITCH="default"
+METAOCAML_SWITCH="metaocaml"
+METAOCAML_COMPILER="ocaml-variants.5.3.0+BER"
+OCAML_DEV_PACKAGES="dune ocaml-lsp-server utop ocamlformat"
+
+opam_is_initialized() {
+  opam --cli=2.1 switch list --short --safe >/dev/null 2>&1
+}
+
+opam_switch_exists() {
+  local switch_name="$1"
+
+  opam --cli=2.1 switch list --short --safe 2>/dev/null | grep -Fxq "$switch_name"
+}
+
+validate_default_ocaml_switch() {
+  if opam --cli=2.1 list \
+      --switch="$OCAML_SWITCH" \
+      --installed \
+      --short \
+      base-metaocaml-ocamlfind \
+      --safe 2>/dev/null | grep -Fxq "base-metaocaml-ocamlfind"; then
+    echo "$OCAML_SWITCH switch が MetaOCaml 環境になっています。" >&2
+    echo "通常 OCaml 用の $OCAML_SWITCH switch を別途用意してから再実行してください。" >&2
+    return 1
+  fi
+}
+
+validate_metaocaml_switch() {
+  if ! opam --cli=2.1 list \
+      --switch="$METAOCAML_SWITCH" \
+      --installed \
+      --short \
+      "$METAOCAML_COMPILER" \
+      --safe 2>/dev/null | grep -Fxq "ocaml-variants"; then
+    echo "$METAOCAML_SWITCH switch は $METAOCAML_COMPILER を使用していません。" >&2
+    echo "既存 switch は変更しません。名前または compiler を確認してください。" >&2
+    return 1
+  fi
+}
+
+if [ "${SKIP_OCAML_SETUP:-}" = "1" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] SKIP_OCAML_SETUP=1 のため OCaml setup をスキップ予定です。"
+  else
+    echo "SKIP_OCAML_SETUP=1 のため OCaml setup をスキップします。"
+  fi
+elif ! command -v opam &> /dev/null; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] Brewfile から opam をインストールした後、次の OCaml setup を実行予定です。"
+    echo "[DRY-RUN] 未初期化の場合のみ opam --cli=2.1 init --no-setup --yes"
+    echo "[DRY-RUN] $OCAML_SWITCH switch がない場合のみ opam --cli=2.1 switch create $OCAML_SWITCH --packages=ocaml --yes"
+    echo "[DRY-RUN] $METAOCAML_SWITCH switch がない場合のみ opam --cli=2.1 switch create $METAOCAML_SWITCH $METAOCAML_COMPILER --yes"
+    echo "[DRY-RUN] opam --cli=2.1 install --switch=$OCAML_SWITCH --yes $OCAML_DEV_PACKAGES"
+    echo "[DRY-RUN] opam --cli=2.1 switch set $OCAML_SWITCH"
+  else
     echo "opam が見つかりません。brew bundle で opam がインストールされているか確認してください。" >&2
+    exit 1
+  fi
+else
+  if ! opam_is_initialized; then
+    run_and_log "opam --cli=2.1 init --no-setup --yes"
+  fi
+
+  if opam_switch_exists "$OCAML_SWITCH"; then
+    validate_default_ocaml_switch
+  elif [ "$DRY_RUN" -eq 1 ] && ! opam_is_initialized; then
+    echo "[DRY-RUN] opam init 後も $OCAML_SWITCH switch がない場合のみ作成予定です。"
+    echo "[DRY-RUN] opam --cli=2.1 switch create $OCAML_SWITCH --packages=ocaml --yes"
+  else
+    run_and_log "opam --cli=2.1 switch create $OCAML_SWITCH --packages=ocaml --yes"
+  fi
+
+  if opam_switch_exists "$METAOCAML_SWITCH"; then
+    validate_metaocaml_switch
+  else
+    run_and_log "opam --cli=2.1 switch create $METAOCAML_SWITCH $METAOCAML_COMPILER --yes"
+  fi
+
+  run_and_log "opam --cli=2.1 install --switch=$OCAML_SWITCH --yes $OCAML_DEV_PACKAGES"
+  run_and_log "opam --cli=2.1 switch set $OCAML_SWITCH"
 fi
 
 # mise は brew bundle 後に存在するはずなのでここで trust と install を行う
@@ -453,4 +518,5 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] すべての処理がスキップされました。実行時は --dry-run を外してください。"
 else
   echo "すべてのセットアップが完了しました！ターミナルを再起動してください。"
+  echo "現在のシェルへ通常 OCaml を反映する場合: eval \"\$(opam env --switch=default)\""
 fi

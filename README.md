@@ -2,7 +2,7 @@
 
 macOS の開発環境を再現しやすくするための dotfiles リポジトリです。
 
-`setup.sh` で設定ファイルのリンク作成、Homebrew によるアプリ・CLI ツールの導入、mise ツールの不足分インストール、opam コマンドの導入確認を行います。
+`setup.sh` で設定ファイルのリンク作成、Homebrew によるアプリ・CLI ツールの導入、mise ツールの不足分インストール、通常 OCaml と MetaOCaml の環境構築を行います。
 
 ## 対象環境
 
@@ -46,6 +46,26 @@ DOTFILES_DIR="$PWD" ./setup.sh
 ```bash
 source ~/.zshrc
 ```
+
+## OCaml
+
+通常の OCaml 開発には opam の `default` switch を使い、`dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を導入します。VS Code の OCaml Platform も `default` switch を参照します。
+
+MetaOCaml は `metaocaml` switch に分離し、次のコマンドで必要なときだけ起動します。
+
+```bash
+metaocaml
+metaocamlc -o example.byte example.ml
+metaocamlopt -o example.native example.ml
+```
+
+OCaml 環境の構築を一時的に省略する場合は `SKIP_OCAML_SETUP=1` を指定します。
+
+```bash
+SKIP_OCAML_SETUP=1 ./setup.sh
+```
+
+詳しい構成と更新方法は [運用手順](docs/operations.md) を参照してください。
 
 ## 詳細
 
