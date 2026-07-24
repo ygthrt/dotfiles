@@ -26,6 +26,8 @@ brew "zsh"
 brew "zsh-autosuggestions"
 # Fish shell like syntax highlighting for zsh
 brew "zsh-syntax-highlighting"
+# Japanese input method
+cask "azookey"
 # OpenAI's official ChatGPT desktop app
 cask "chatgpt"
 # OpenAI's coding agent that runs in your terminal
@@ -62,6 +64,8 @@ cask "onedrive"
 cask "pdfsam-basic"
 # Team communication and collaboration software
 cask "slack"
+# Music streaming service
+cask "spotify"
 # Open-source code editor
 cask "visual-studio-code"
 # Video communication and virtual meeting platform
