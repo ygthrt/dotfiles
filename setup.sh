@@ -367,25 +367,27 @@ fi
 # =========================================================
 # 4. Brewfile からアプリとツールのインストール
 # =========================================================
+# Brewfile は必要なツールとアプリの存在を保証するために使う。
+# セットアップ中の一斉更新で自己更新型アプリと競合しないよう、既存パッケージは更新しない。
 echo "Brewfile からアプリをインストールしています..."
 cd "$DOTFILES_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "[DRY-RUN] cd $DOTFILES_DIR"
-  echo "[DRY-RUN] HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose"
+  echo "[DRY-RUN] HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --no-upgrade --verbose"
   echo "[DRY-RUN] 必要な依存関係がある場合のみ sudo 認証の事前確認と keep-alive"
-  echo "[DRY-RUN] 不足がある場合のみ brew bundle --verbose"
+  echo "[DRY-RUN] 不足がある場合のみ HOMEBREW_NO_AUTO_UPDATE=1 brew bundle install --no-upgrade --verbose"
 else
   if [ "$CI" = "true" ]; then
     # CI環境では、GUIアプリ（cask）、Macアプリ（mas）、VS Code拡張機能（vscode）を除外してパイプで渡す
-    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | brew bundle --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+    run_and_log "cat Brewfile | grep -E -v '^(cask|mas|vscode)' | HOMEBREW_NO_AUTO_UPDATE=1 brew bundle install --no-upgrade --verbose --file=-" || { echo "brew bundle に失敗しました" >&2; exit 1; }
   else
-    # ローカルのMacでは通常通りすべてインストール
-    if HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --verbose; then
+    # ローカルのMacでは不足している依存関係だけをインストール
+    if HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --no-upgrade --verbose; then
       echo "Brewfile の依存関係は既に満たされています。"
     else
       echo "Brewfile の依存関係に不足があります。インストール前に sudo 認証を確認します。"
       ensure_sudo_session
-      run_and_log "brew bundle --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
+      run_and_log "HOMEBREW_NO_AUTO_UPDATE=1 brew bundle install --no-upgrade --verbose" || { echo "brew bundle に失敗しました" >&2; exit 1; }
     fi
   fi
 fi

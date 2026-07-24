@@ -20,6 +20,20 @@ alias brew-dump='env PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/s
 
 通常の `brew bundle dump` をそのまま実行すると、mise や npm など別の仕組みで管理しているツールが `Brewfile` に混入することがあります。`brew-dump` は Homebrew 用の PATH に絞ってから `Brewfile` を更新します。
 
+## Homebrew の更新
+
+`setup.sh` は `brew bundle install --no-upgrade` を使い、Brewfile に記載されたパッケージやアプリの不足分だけを導入します。既存環境の一斉更新は行わないため、自己更新する GUI アプリとの競合や、セットアップ中の意図しないアプリ終了を避けられます。
+
+Homebrew と既存パッケージを更新する場合は、セットアップとは分けて、更新対象を確認してから明示的に実行します。
+
+```bash
+brew update
+brew outdated
+brew upgrade
+```
+
+`--no-upgrade` を指定していても、新しいパッケージのインストールに必要な依存関係は更新される場合があります。
+
 ## OCaml / MetaOCaml
 
 Homebrew は opam 本体と VS Code の OCaml Platform 拡張を管理し、OCaml の compiler と開発ツールは opam が管理します。
