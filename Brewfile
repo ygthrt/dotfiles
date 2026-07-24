@@ -1,5 +1,7 @@
 # Simple, fast and user-friendly alternative to find
 brew "fd"
+# Play, record, convert, and stream select audio and video codecs
+brew "ffmpeg"
 # Command-line fuzzy finder written in Go
 brew "fzf"
 # GitHub command-line tool
@@ -58,6 +60,8 @@ cask "microsoft-excel"
 cask "microsoft-outlook"
 # Presentation software
 cask "microsoft-powerpoint"
+# Meet, chat, call, and collaborate in just one place
+cask "microsoft-teams"
 # Cloud storage client
 cask "onedrive"
 # Extracts pages, splits, merges, mixes and rotates PDF files
@@ -79,4 +83,8 @@ vscode "eamodio.gitlens"
 vscode "james-yu.latex-workshop"
 vscode "mhutchie.git-graph"
 vscode "ms-ceintl.vscode-language-pack-ja"
+vscode "ms-python.debugpy"
+vscode "ms-python.python"
+vscode "ms-python.vscode-pylance"
+vscode "ms-python.vscode-python-envs"
 vscode "ocamllabs.ocaml-platform"
