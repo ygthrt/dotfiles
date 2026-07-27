@@ -1,6 +1,14 @@
 {
     "workbench.sideBar.location": "right",
     "workbench.editor.enablePreview": false,
+    // 新しく開くウィンドウをフルスクリーンにする
+    "window.newWindowDimensions": "fullscreen",
+    
+    // フルスクリーンで終了した場合、次回も復元する
+    "window.restoreFullscreen": true,
+    
+    // 右側の Secondary Side Bar を新規ワークスペースでも開かない
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
     "github.copilot.enable": {
         "*": true,
         "plaintext": false,
@@ -48,28 +56,13 @@
             "-outdir=%OUTDIR%",
             "%DOC%"
         ]
-    },
-    {
-        "name": "export to ChatGPT Drive",
-        "command": "bash",
-        "args": [
-            "-lc",
-            "REPO_ROOT=$(git -C \"$1\" rev-parse --show-toplevel) && \"$REPO_ROOT/scripts/export_to_chatgpt_drive.sh\" \"$2\" \"$3\" \"$4\" \"$1\"",
-            "bash",
-            "%DIR%",
-            "%DOC%",
-            "%DOCFILE%",
-            "%OUTDIR%"
-        ],
-        "cwd": "%DIR%"
     }
 ],
 "latex-workshop.latex.recipes": [
     {
-        "name": "platex -> dvipdfmx -> export to Drive",
+        "name": "platex -> dvipdfmx",
         "tools": [
-            "latexmk (platex)",
-            "export to ChatGPT Drive"
+            "latexmk (platex)"
         ]
     }
 ],
