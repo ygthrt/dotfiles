@@ -31,7 +31,8 @@
     "ocaml.trace.server": "off",
     "[ocaml]": {
         // .ocamlformat のあるプロジェクトで必要に応じて個別に有効化する
-        "editor.formatOnSave": false
+        "editor.defaultFormatter": "ocamllabs.ocaml-platform",
+        "editor.formatOnSave": true
     },
 
     // ==========================================
