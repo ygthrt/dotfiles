@@ -83,6 +83,11 @@ metaocamlopt() {
   opam exec --switch=metaocaml -- metaocamlopt "$@"
 }
 
+# MetaOCaml対応のutop
+metautop() {
+  opam exec --switch=metaocaml -- utop-full "$@"
+}
+
 # ==========================================
 # mise (環境構築・バージョン管理)
 # ==========================================

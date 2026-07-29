@@ -401,6 +401,7 @@ OCAML_SWITCH="default"
 METAOCAML_SWITCH="metaocaml"
 METAOCAML_COMPILER="ocaml-variants.5.3.0+BER"
 OCAML_DEV_PACKAGES="dune ocaml-lsp-server utop ocamlformat"
+METAOCAML_DEV_PACKAGES="utop-full"
 
 opam_is_initialized() {
   opam --cli=2.1 switch list --short --safe >/dev/null 2>&1
@@ -451,6 +452,7 @@ elif ! command -v opam &> /dev/null; then
     echo "[DRY-RUN] $OCAML_SWITCH switch がない場合のみ opam --cli=2.1 switch create $OCAML_SWITCH --packages=ocaml --yes"
     echo "[DRY-RUN] $METAOCAML_SWITCH switch がない場合のみ opam --cli=2.1 switch create $METAOCAML_SWITCH $METAOCAML_COMPILER --yes"
     echo "[DRY-RUN] opam --cli=2.1 install --switch=$OCAML_SWITCH --yes $OCAML_DEV_PACKAGES"
+    echo "[DRY-RUN] opam --cli=2.1 install --switch=$METAOCAML_SWITCH --yes $METAOCAML_DEV_PACKAGES"
     echo "[DRY-RUN] opam --cli=2.1 switch set $OCAML_SWITCH"
   else
     echo "opam が見つかりません。brew bundle で opam がインストールされているか確認してください。" >&2
@@ -477,6 +479,7 @@ else
   fi
 
   run_and_log "opam --cli=2.1 install --switch=$OCAML_SWITCH --yes $OCAML_DEV_PACKAGES"
+  run_and_log "opam --cli=2.1 install --switch=$METAOCAML_SWITCH --yes $METAOCAML_DEV_PACKAGES"
   run_and_log "opam --cli=2.1 switch set $OCAML_SWITCH"
 fi
 

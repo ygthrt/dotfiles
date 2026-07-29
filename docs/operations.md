@@ -46,7 +46,7 @@ default
   dune / ocaml-lsp-server / utop / ocamlformat
 
 metaocaml
-  ocaml-variants.5.3.0+BER
+  ocaml-variants.5.3.0+BER / utop-full
 ```
 
 既存の `default` switch の compiler は自動で変更しません。`default` が存在しない新規環境では、opam が選ぶ標準 compiler で作成します。
@@ -57,6 +57,9 @@ MetaOCaml は通常の shell 環境を切り替えず、専用関数から起動
 # REPL またはスクリプト実行
 metaocaml
 metaocaml example.ml
+
+# MetaOCaml 対応の utop
+metautop
 
 # bytecode / native compiler
 metaocamlc -o example.byte example.ml
@@ -82,6 +85,7 @@ opam exec --switch=default -- dune --version
 opam exec --switch=default -- ocamllsp --version
 opam exec --switch=default -- utop -version
 opam exec --switch=default -- ocamlformat --version
+opam exec --switch=metaocaml -- utop-full -version
 ```
 
 compiler やパッケージを更新する場合は、`setup.sh` に自動 upgrade を追加せず、先に opam の解決内容を確認します。

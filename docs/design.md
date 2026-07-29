@@ -111,7 +111,7 @@ mise は Node.js、Python、Go、Java などの言語ランタイムや開発ツ
 
 opam は OCaml の compiler、switch、開発ツールを管理します。`setup.sh` は通常開発用の `default` switch と MetaOCaml 用の `metaocaml` switch を分離し、不足している switch と開発ツールだけを追加します。
 
-既存の `default` switch の compiler は自動で更新・置換しません。通常開発用の `default` には `dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を入れ、`metaocaml` は `ocaml-variants.5.3.0+BER` の最小構成に保ちます。
+既存の `default` switch の compiler は自動で更新・置換しません。通常開発用の `default` には `dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を入れ、`metaocaml` には `ocaml-variants.5.3.0+BER` と MetaOCaml 対応 REPL 用の `utop-full` を入れます。
 
 Homebrew で入れるべきものと mise で入れるべきものを混在させないようにします。OCaml 関連の変更では、opam と Homebrew / mise の責務が重ならないようにします。
 
