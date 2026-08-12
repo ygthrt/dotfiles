@@ -397,11 +397,13 @@ fi
 # =========================================================
 echo "OCaml / opam の状態を確認しています..."
 
-OCAML_SWITCH="default"
-METAOCAML_SWITCH="metaocaml"
-METAOCAML_COMPILER="ocaml-variants.5.3.0+BER"
-OCAML_DEV_PACKAGES="dune ocaml-lsp-server utop ocamlformat"
-METAOCAML_DEV_PACKAGES="utop-full"
+OPAM_PACKAGES_FILE="$DOTFILES_DIR/scripts/opam-packages.sh"
+if [ ! -r "$OPAM_PACKAGES_FILE" ]; then
+  echo "opam package 定義が見つかりません: $OPAM_PACKAGES_FILE" >&2
+  exit 1
+fi
+# shellcheck source=scripts/opam-packages.sh
+source "$OPAM_PACKAGES_FILE"
 
 opam_is_initialized() {
   opam --cli=2.1 switch list --short --safe >/dev/null 2>&1

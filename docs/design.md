@@ -111,7 +111,7 @@ mise は Node.js、Python、Go、Java などの言語ランタイムや開発ツ
 
 opam は OCaml の compiler、switch、開発ツールを管理します。`setup.sh` は通常開発用の `default` switch と MetaOCaml 用の `metaocaml` switch を分離し、不足している switch と開発ツールだけを追加します。
 
-既存の `default` switch の compiler は自動で更新・置換しません。通常開発用の `default` には `dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を入れ、`metaocaml` には `ocaml-variants.5.3.0+BER` と MetaOCaml 対応 REPL 用の `utop-full` を入れます。
+既存の `default` switch の compiler は自動で更新・置換しません。通常開発用の `default` には `dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を入れ、`metaocaml` には `ocaml-variants.5.3.0+BER` と `utop` パッケージを入れます。MetaOCaml 対応 REPL には、同パッケージが提供する `utop-full` を使います。
 
 Homebrew で入れるべきものと mise で入れるべきものを混在させないようにします。OCaml 関連の変更では、opam と Homebrew / mise の責務が重ならないようにします。
 
@@ -136,4 +136,5 @@ GitHub Actions では、ユーザーの実環境とは異なるパス、権限�
 - `DOTFILES_DIR` を `~/dotfiles` に固定しない
 - CI の `$PWD` をリポジトリルートとして扱えるようにする
 - `set -e` 環境で非ゼロ終了する可能性のある処理を安全に扱う
+- OCaml compiler のビルドは省略し、空の opam switch で solver だけを実行して package の存在と依存解決を確認する
 - CI 専用の特殊処理を増やしすぎず、実環境での自然な挙動を優先する
