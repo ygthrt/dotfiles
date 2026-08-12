@@ -401,7 +401,7 @@ OCAML_SWITCH="default"
 METAOCAML_SWITCH="metaocaml"
 METAOCAML_COMPILER="ocaml-variants.5.3.0+BER"
 OCAML_DEV_PACKAGES="dune ocaml-lsp-server utop ocamlformat"
-METAOCAML_DEV_PACKAGES="utop-full"
+METAOCAML_DEV_PACKAGES="utop"
 
 opam_is_initialized() {
   opam --cli=2.1 switch list --short --safe >/dev/null 2>&1

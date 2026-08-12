@@ -46,7 +46,7 @@ default
   dune / ocaml-lsp-server / utop / ocamlformat
 
 metaocaml
-  ocaml-variants.5.3.0+BER / utop-full
+  ocaml-variants.5.3.0+BER / utop（utop-full を提供）
 ```
 
 既存の `default` switch の compiler は自動で変更しません。`default` が存在しない新規環境では、opam が選ぶ標準 compiler で作成します。
