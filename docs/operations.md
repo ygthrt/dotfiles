@@ -101,6 +101,12 @@ CI や一時的な確認で OCaml 構築を省略する場合は、次のよう�
 SKIP_OCAML_SETUP=1 ./setup.sh
 ```
 
+opam の switch、compiler、開発 package の定義は `scripts/opam-packages.sh` で共有します。compiler をビルドせず、CI と同じ依存解決だけを確認する場合は次を実行します。
+
+```bash
+./scripts/check-opam-packages.sh
+```
+
 ## hidden 設定
 
 API キー、パスワード、特定のマシンでだけ使う設定は、Git 管理対象の設定ファイルには書きません。

@@ -136,4 +136,5 @@ GitHub Actions では、ユーザーの実環境とは異なるパス、権限�
 - `DOTFILES_DIR` を `~/dotfiles` に固定しない
 - CI の `$PWD` をリポジトリルートとして扱えるようにする
 - `set -e` 環境で非ゼロ終了する可能性のある処理を安全に扱う
+- OCaml compiler のビルドは省略し、空の opam switch で solver だけを実行して package の存在と依存解決を確認する
 - CI 専用の特殊処理を増やしすぎず、実環境での自然な挙動を優先する
