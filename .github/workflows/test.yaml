@@ -19,9 +19,6 @@ jobs:
     # GitHubが用意する最新のmacOS仮想環境を使用
     runs-on: macos-latest
     timeout-minutes: 45
-    env:
-      # runner の既存状態と分離し、Elan の初期設定だけを検証する
-      ELAN_HOME: ${{ runner.temp }}/elan
 
     steps:
       # 1. あなたのリポジトリのコードをこの仮想Macにダウンロードする
@@ -42,6 +39,8 @@ jobs:
         # CIではbrew bundleを検証しつつ、重い言語環境構築だけをスキップする
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # runner の既存状態と分離し、Elan の初期設定だけを検証する
+          ELAN_HOME: ${{ runner.temp }}/elan
           SKIP_OCAML_SETUP: "1"
           SKIP_MISE_INSTALL: "1"
         run: |
@@ -53,6 +52,8 @@ jobs:
 
       # 3. プロキシは実行せず、Elan 本体と default 設定だけを確認する
       - name: Verify Elan setup without downloading Lean
+        env:
+          ELAN_HOME: ${{ runner.temp }}/elan
         run: |
           BREW_PREFIX="$(brew --prefix)"
 
