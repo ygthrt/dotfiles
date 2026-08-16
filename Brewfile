@@ -1,3 +1,5 @@
+# Lean Theorem Prover installer and version manager
+brew "elan-init"
 # Simple, fast and user-friendly alternative to find
 brew "fd"
 # Play, record, convert, and stream select audio and video codecs
@@ -81,6 +83,7 @@ vscode "bierner.markdown-footnotes"
 vscode "bierner.markdown-preview-github-styles"
 vscode "eamodio.gitlens"
 vscode "james-yu.latex-workshop"
+vscode "leanprover.lean4"
 vscode "mhutchie.git-graph"
 vscode "ms-ceintl.vscode-language-pack-ja"
 vscode "ms-python.debugpy"

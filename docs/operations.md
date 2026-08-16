@@ -34,6 +34,40 @@ brew upgrade
 
 `--no-upgrade` を指定していても、新しいパッケージのインストールに必要な依存関係は更新される場合があります。
 
+## Lean 4 / Elan
+
+Homebrew は `elan-init` と公式 VS Code 拡張を管理し、Elan は Lean 4 の toolchain を管理します。Lean 本体は Homebrew や mise で直接管理しません。
+
+`setup.sh` は `${ELAN_HOME:-$HOME/.elan}/settings.toml` を読み取り、`default_toolchain` が未設定の場合だけ次の設定を行います。
+
+```text
+leanprover/lean4:stable
+```
+
+既存の default toolchain は自動で変更しません。nightly や特定バージョンを選んでいる環境でも、`setup.sh` の再実行によって `stable` へ戻ることはありません。設定ファイルを読み取れない場合や、Brewfile 処理後も Homebrew 配下に `elan` が見つからない場合は、既存状態を推測で上書きせずエラーにします。
+
+導入状態を Lean toolchain の取得なしで確認する場合は、プロキシを実行せずパスと設定ファイルだけを確認します。
+
+```bash
+command -v elan
+command -v lean
+command -v lake
+grep -E '^[[:space:]]*default_toolchain[[:space:]]*=' "${ELAN_HOME:-$HOME/.elan}/settings.toml"
+```
+
+グローバルな `stable` は、`lean-toolchain` がない場所で使うフォールバックです。各 Lean プロジェクトでは、プロジェクトルートの `lean-toolchain` に利用するリリースの具体的なバージョンを記録します。
+
+```text
+# lean-toolchain の形式。X.Y.Z は利用するリリースへ置き換える
+leanprover/lean4:vX.Y.Z
+```
+
+この dotfiles 自体には `lean-toolchain` を置かず、`~/.elan` も Git 管理しません。実機導入後、最初に `lean` や `lake` を実行すると、選択された toolchain がダウンロードされる場合があります。
+
+ローカルでの変更確認には `./setup.sh --dry-run` を使います。Elan の実インストールと default 設定は GitHub Actions の使い捨て macOS 環境で確認し、普段使いの Mac での `./setup.sh` 本実行はレビュー後の明示的なロールアウトとして扱います。
+
+Homebrew の `lean-cli` など `elan-init` と競合するパッケージがある場合、`setup.sh` は自動削除しません。Homebrew のエラー内容を確認し、どちらで Lean を管理するかを決めてから手動で整理してください。
+
 ## OCaml / MetaOCaml
 
 Homebrew は opam 本体と VS Code の OCaml Platform 拡張を管理し、OCaml の compiler と開発ツールは opam が管理します。

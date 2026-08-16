@@ -393,7 +393,63 @@ else
 fi
 
 # =========================================================
-# 5. opam (OCaml) のセットアップ
+# 5. Elan (Lean 4) のセットアップ
+# =========================================================
+echo "Lean 4 / Elan の状態を確認しています..."
+
+ELAN_BIN="$BREW_PREFIX/bin/elan"
+ELAN_HOME_DIR="${ELAN_HOME:-$HOME/.elan}"
+ELAN_SETTINGS_FILE="$ELAN_HOME_DIR/settings.toml"
+LEAN_DEFAULT_TOOLCHAIN="leanprover/lean4:stable"
+
+# 実行時は Brewfile 処理後に Homebrew 管理の Elan が存在する必要がある。
+# dry-run ではインストール自体を行わないため、未導入でも後続の予定を表示する。
+if [ "$DRY_RUN" -eq 0 ] && [ ! -x "$ELAN_BIN" ]; then
+  echo "Elan が見つかりません: $ELAN_BIN" >&2
+  echo "brew bundle で elan-init がインストールされているか確認してください。" >&2
+  exit 1
+elif [ "$DRY_RUN" -eq 1 ] && [ ! -x "$ELAN_BIN" ]; then
+  echo "[DRY-RUN] Brewfile から elan-init をインストールした後、$ELAN_BIN の存在を確認予定です。"
+fi
+
+# 既存の Elan 設定を読めない場合は、推測で上書きしない。
+if [ -e "$ELAN_HOME_DIR" ] || [ -L "$ELAN_HOME_DIR" ]; then
+  if [ ! -d "$ELAN_HOME_DIR" ] || [ ! -r "$ELAN_HOME_DIR" ] || [ ! -x "$ELAN_HOME_DIR" ]; then
+    echo "Elan の設定ディレクトリを読み取れません: $ELAN_HOME_DIR" >&2
+    exit 1
+  fi
+fi
+
+ELAN_DEFAULT_CONFIGURED=0
+if [ -e "$ELAN_SETTINGS_FILE" ] || [ -L "$ELAN_SETTINGS_FILE" ]; then
+  if [ ! -f "$ELAN_SETTINGS_FILE" ] || [ ! -r "$ELAN_SETTINGS_FILE" ]; then
+    echo "Elan の設定ファイルを読み取れません: $ELAN_SETTINGS_FILE" >&2
+    exit 1
+  fi
+
+  if grep -Eq '^[[:space:]]*default_toolchain[[:space:]]*=' "$ELAN_SETTINGS_FILE"; then
+    ELAN_DEFAULT_CONFIGURED=1
+  else
+    grep_status=$?
+    if [ "$grep_status" -ne 1 ]; then
+      echo "Elan の設定ファイルを確認できませんでした: $ELAN_SETTINGS_FILE" >&2
+      exit 1
+    fi
+  fi
+fi
+
+if [ "$ELAN_DEFAULT_CONFIGURED" -eq 1 ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[DRY-RUN] Elan の default toolchain は設定済みのため、既存設定を維持します: $ELAN_SETTINGS_FILE"
+  else
+    echo "Elan の default toolchain は設定済みのため、既存設定を維持します: $ELAN_SETTINGS_FILE"
+  fi
+else
+  run_and_log "\"$ELAN_BIN\" default $LEAN_DEFAULT_TOOLCHAIN"
+fi
+
+# =========================================================
+# 6. opam (OCaml) のセットアップ
 # =========================================================
 echo "OCaml / opam の状態を確認しています..."
 
@@ -485,6 +541,9 @@ else
   run_and_log "opam --cli=2.1 switch set $OCAML_SWITCH"
 fi
 
+# =========================================================
+# 7. mise のセットアップ
+# =========================================================
 # mise は brew bundle 後に存在するはずなのでここで trust と install を行う
 if [ "$SKIP_MISE_INSTALL" = "1" ]; then
   if [ "$DRY_RUN" -eq 1 ]; then
