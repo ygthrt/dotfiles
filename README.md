@@ -53,7 +53,7 @@ source ~/.zshrc
 
 通常の OCaml 開発には opam の `default` switch を使い、`dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を導入します。VS Code の OCaml Platform も `default` switch を参照します。
 
-MetaOCaml は `metaocaml` switch に分離し、MetaOCaml 対応の REPL 用に `utop-full` を導入します。次のコマンドで必要なときだけ起動します。
+MetaOCaml は `metaocaml` switch に分離し、`utop` パッケージが提供する `utop-full` を MetaOCaml 対応の REPL として使います。次のコマンドで必要なときだけ起動します。
 
 ```bash
 metaocaml
