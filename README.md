@@ -2,7 +2,7 @@
 
 macOS の開発環境を再現しやすくするための dotfiles リポジトリです。
 
-`setup.sh` で設定ファイルのリンク作成、Homebrew によるアプリ・CLI ツールの導入、mise ツールの不足分インストール、通常 OCaml と MetaOCaml の環境構築を行います。
+`setup.sh` で設定ファイルのリンク作成、Homebrew によるアプリ・CLI ツールの導入、Elan の初期設定、mise ツールの不足分インストール、通常 OCaml と MetaOCaml の環境構築を行います。
 
 ## 対象環境
 
@@ -48,6 +48,14 @@ DOTFILES_DIR="$PWD" ./setup.sh
 ```bash
 source ~/.zshrc
 ```
+
+## Lean 4
+
+Homebrew は Lean 4 の toolchain manager である Elan と公式 VS Code 拡張を導入し、Lean toolchain 自体は Elan が管理します。`setup.sh` は Elan の default toolchain が未設定の場合だけ `leanprover/lean4:stable` を設定し、既存の default は変更しません。
+
+グローバルな `stable` はプロジェクト外で使うフォールバックです。各 Lean プロジェクトでは、プロジェクトルートの `lean-toolchain` に具体的なバージョンを指定してください。この dotfiles 自体には `lean-toolchain` を置かず、`~/.elan` も Git 管理しません。
+
+実機導入後、最初に `lean` や `lake` を実行したときは、選択された Lean toolchain がダウンロードされる場合があります。
 
 ## OCaml
 

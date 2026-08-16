@@ -107,13 +107,17 @@ sandbox 内コマンドのネットワークは、rules ではなく `sandbox_wo
 
 Homebrew は macOS アプリ、CLI ツール、Cask、必要に応じて VS Code 拡張を管理します。
 
+Lean 4 では、Homebrew が `elan-init` と公式 VS Code 拡張を管理し、Elan が Lean toolchain を管理します。`setup.sh` は Elan の default toolchain が未設定の場合だけ `leanprover/lean4:stable` を設定し、既存値は変更しません。
+
+グローバルな `stable` はプロジェクト外のフォールバックに限定します。再現可能性が必要な各 Lean プロジェクトは、プロジェクトルートの `lean-toolchain` で具体的なバージョンを管理します。この dotfiles では、リポジトリ直下の `lean-toolchain`、mise による Lean 管理、`~/.elan` の Git 管理は行いません。
+
 mise は Node.js、Python、Go、Java などの言語ランタイムや開発ツールを管理します。
 
 opam は OCaml の compiler、switch、開発ツールを管理します。`setup.sh` は通常開発用の `default` switch と MetaOCaml 用の `metaocaml` switch を分離し、不足している switch と開発ツールだけを追加します。
 
 既存の `default` switch の compiler は自動で更新・置換しません。通常開発用の `default` には `dune`、`ocaml-lsp-server`、`utop`、`ocamlformat` を入れ、`metaocaml` には `ocaml-variants.5.3.0+BER` と `utop` パッケージを入れます。MetaOCaml 対応 REPL には、同パッケージが提供する `utop-full` を使います。
 
-Homebrew で入れるべきものと mise で入れるべきものを混在させないようにします。OCaml 関連の変更では、opam と Homebrew / mise の責務が重ならないようにします。
+Homebrew で入れるべきものと Elan、mise、opam が管理するものを混在させないようにします。Lean 関連の変更では Elan と Homebrew / mise、OCaml 関連の変更では opam と Homebrew / mise の責務が重ならないようにします。
 
 ## 秘密情報とローカル設定
 
@@ -136,5 +140,6 @@ GitHub Actions では、ユーザーの実環境とは異なるパス、権限�
 - `DOTFILES_DIR` を `~/dotfiles` に固定しない
 - CI の `$PWD` をリポジトリルートとして扱えるようにする
 - `set -e` 環境で非ゼロ終了する可能性のある処理を安全に扱う
+- `elan-init` とプロキシ、default 設定は実環境と同じ処理で確認し、`lean` と `lake` は実行せず Lean toolchain の取得を避ける
 - OCaml compiler のビルドは省略し、空の opam switch で solver だけを実行して package の存在と依存解決を確認する
 - CI 専用の特殊処理を増やしすぎず、実環境での自然な挙動を優先する

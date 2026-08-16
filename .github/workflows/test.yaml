@@ -19,6 +19,9 @@ jobs:
     # GitHubが用意する最新のmacOS仮想環境を使用
     runs-on: macos-latest
     timeout-minutes: 45
+    env:
+      # runner の既存状態と分離し、Elan の初期設定だけを検証する
+      ELAN_HOME: ${{ runner.temp }}/elan
 
     steps:
       # 1. あなたのリポジトリのコードをこの仮想Macにダウンロードする
@@ -48,12 +51,29 @@ jobs:
           # CI環境なので --dry-run はつけず、brew bundle まで本実行する
           DOTFILES_DIR="$PWD" ./setup.sh
 
-      # 3. compiler はビルドせず、setup.sh と共有する package 定義の依存解決だけを確認する
+      # 3. プロキシは実行せず、Elan 本体と default 設定だけを確認する
+      - name: Verify Elan setup without downloading Lean
+        run: |
+          BREW_PREFIX="$(brew --prefix)"
+
+          brew list --formula elan-init >/dev/null
+          for proxy in elan lean lake; do
+            test -x "$BREW_PREFIX/bin/$proxy"
+          done
+
+          grep -Eq '^[[:space:]]*default_toolchain[[:space:]]*=[[:space:]]*"leanprover/lean4:stable"[[:space:]]*$' "$ELAN_HOME/settings.toml"
+
+          if [ -d "$ELAN_HOME/toolchains" ] && find "$ELAN_HOME/toolchains" -mindepth 1 -print -quit | grep -q .; then
+            echo "Lean toolchain が意図せずダウンロードされています: $ELAN_HOME/toolchains" >&2
+            exit 1
+          fi
+
+      # 4. compiler はビルドせず、setup.sh と共有する package 定義の依存解決だけを確認する
       - name: Check opam package resolution
         timeout-minutes: 5
         run: ./scripts/check-opam-packages.sh
 
-      # 4. (オプション) もしエラーが起きたら、ログファイルの中身を表示する
+      # 5. (オプション) もしエラーが起きたら、ログファイルの中身を表示する
       - name: Show log file on failure
         if: failure()
         run: |
